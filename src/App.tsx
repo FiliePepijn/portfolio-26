@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
@@ -12,7 +12,6 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 function App() {
   const container = useRef<HTMLDivElement>(null)
-  const [isHoveringContact, setIsHoveringContact] = useState(false)
 
   const isOGPreview = new URLSearchParams(window.location.search).get('preview') === 'og';
 
@@ -40,7 +39,7 @@ function App() {
   }
 
   return (
-    <div ref={container} className="min-h-screen bg-[#121212] text-white font-satoshi selection:bg-[#FF7A00] selection:text-[#121212] bg-grain overflow-x-hidden">
+    <div ref={container} className="min-h-dvh bg-[#121212] text-white font-satoshi selection:bg-[#FF7A00] selection:text-[#121212] bg-grain overflow-x-hidden">
       {/* NOISE / GRAIN OVERLAY */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[200] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
@@ -50,9 +49,9 @@ function App() {
       </div>
 
       {/* SYSTEM HERO SCREEN */}
-      <section className="p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen flex flex-col justify-center">
+      <section className="p-2 md:p-8 max-w-[1600px] mx-auto min-h-dvh flex flex-col justify-center">
         
-        <div className="border-2 border-[#FF7A00] bg-black overflow-hidden flex flex-col shadow-[20px_20px_0px_0px_rgba(255,122,0,0.1)] rounded-sm">
+        <div className="@container border-2 border-[#FF7A00] bg-black overflow-hidden flex flex-col shadow-[20px_20px_0px_0px_rgba(255,122,0,0.1)] rounded-sm">
           {/* TOP BAR: SYSTEM STATUS */}
           <div className="h-10 border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-4">
             <div className="flex gap-2 items-center">
@@ -67,15 +66,15 @@ function App() {
           </div>
           
           {/* MAIN BODY */}
-          <div className="flex flex-col lg:grid lg:grid-cols-[1fr_400px] border-b-2 border-[#FF7A00]/30">
+          <div className="flex flex-col lg:grid lg:grid-cols-[1fr_minmax(350px,400px)] border-b-2 border-[#FF7A00]/30">
             {/* LEFT COLUMN: IDENTITY & BIOMETRICS */}
-            <div className="flex-1 p-6 md:p-12 border-b-2 lg:border-b-0 lg:border-r-2 border-[#FF7A00]/30 flex flex-col justify-center gap-5 bg-[#121212] relative overflow-hidden">
+            <div className="flex-1 p-4 sm:p-6 md:p-12 border-b-2 lg:border-b-0 lg:border-r-2 border-[#FF7A00]/30 flex flex-col justify-center gap-5 bg-[#121212] relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-full opacity-[0.02] pointer-events-none bg-grid-lines" />
               
               <div className="header-reveal relative z-10">
                   <SplitText
-                    className="font-clash font-bold tracking-tighter leading-[0.8] text-[#FF7A00] uppercase text-[clamp(6rem, 20vw, 26rem)]"
-                    style={{ fontSize: 'clamp(12rem, 18vw, 19rem)' }}
+                    className="font-clash font-bold tracking-tighter leading-[0.8] text-[#FF7A00] uppercase"
+                    style={{ fontSize: 'clamp(5rem, 18cqw, 19rem)' }}
                   >
                     PEPIJN
                   </SplitText>
@@ -83,7 +82,7 @@ function App() {
               
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6 relative z-10">
                 <div className="header-reveal">
-                  <div className="bg-[#FF7A00] text-[#121212] px-4 py-1.5 font-satoshi font-black tracking-tighter text-xl md:text-3xl uppercase transform -rotate-1 shadow-[4px_4px_0px_0px_white]">
+                  <div className="bg-[#FF7A00] text-[#121212] px-4 py-1.5 font-satoshi font-black tracking-tighter text-lg md:text-3xl uppercase transform -rotate-1 shadow-[4px_4px_0px_0px_white]">
                     UX/UI Designer & Web-Developer
                   </div>
                 </div>
@@ -93,7 +92,7 @@ function App() {
               <div className="w-full md:w-2/3 h-[1px] bg-[#FF7A00]/30 header-reveal relative z-10" />
               
               <div className="header-reveal relative z-10">
-                <p className="max-w-xl text-lg md:text-2xl font-bold uppercase opacity-80 leading-[1.1] border-l-4 border-[#FF7A00] pl-6 font-satoshi">
+                <p className="max-w-xl text-base md:text-2xl font-bold uppercase opacity-80 leading-[1.1] border-l-4 border-[#FF7A00] pl-4 md:pl-6 font-satoshi">
                   REDUCING NOISE IN DIGITAL SYSTEMS. <br/>
                   DESIGNING FOR CLARITY, ATTENTION, AND HUMAN INTENT
                 </p>
@@ -108,14 +107,11 @@ function App() {
                  <div className="absolute bottom-3 left-4 font-brutalist-mono text-[10px] text-[#FF7A00] z-20 bg-black/50 px-2 py-1 border border-[#FF7A00]/20 uppercase tracking-tighter">SCAN_RES: HIGH_DENSITY</div>
                  
                  {/* PCD Rendering */}
-                 <PointCloudHead
-                   isExternalTracking={isHoveringContact}
-                   trackingMode={isHoveringContact ? 'contact' : 'default'}
-                 />
+                 <PointCloudHead />
               </div>
               
               {/* PARAMETER FEED */}
-              <div className="p-8 flex flex-col gap-6 justify-center flex-1">
+              <div className="p-5 flex flex-col gap-6 justify-center flex-1">
                 <div className="space-y-3 font-brutalist-mono text-[11px] md:text-xs uppercase">
                   <div className="flex justify-between border-b border-white/10 pb-2">
                     <span className="opacity-40">Subject_ID</span>
@@ -133,11 +129,9 @@ function App() {
                 
                 <button 
                   onClick={scrollToContact}
-                  onMouseEnter={() => setIsHoveringContact(true)}
-                  onMouseLeave={() => setIsHoveringContact(false)}
                   className="group w-full py-4 border-2 border-[#FF7A00] text-[#FF7A00] font-clash font-bold text-2xl uppercase hover:bg-[#FF7A00] hover:text-[#121212] transition-all relative overflow-hidden shadow-[6px_6px_0px_0px_rgba(255,122,0,0.2)]"
                 >
-                  <span className="relative z-10">[ Contact_System ]</span>
+                  <span className="relative z-10">Contact</span>
                   <div className="absolute inset-0 bg-[#FF7A00] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 </button>
               </div>

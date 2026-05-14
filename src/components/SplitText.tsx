@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 export default function SplitText({ children, className = '', style, stagger = 0.03, trigger }: { children: string, className?: string, style?: React.CSSProperties, stagger?: number, trigger?: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const chars = children.split('')
+  const words = children.split(' ')
 
   useGSAP(() => {
     const el = containerRef.current
@@ -32,13 +32,16 @@ export default function SplitText({ children, className = '', style, stagger = 0
 
   return (
     <div ref={containerRef} className={`flex flex-wrap ${className}`} style={{ perspective: '1000px', ...style }}>
-      {chars.map((char, i) => (
-        <span 
-          key={i} 
-          className="char inline-block origin-top"
-          style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
-        >
-          {char}
+      {words.map((word, wordIndex) => (
+        <span key={wordIndex} className="inline-block whitespace-nowrap mr-[0.2em] last:mr-0">
+          {word.split('').map((char, charIndex) => (
+            <span 
+              key={charIndex} 
+              className="char inline-block origin-top"
+            >
+              {char}
+            </span>
+          ))}
         </span>
       ))}
     </div>
