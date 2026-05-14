@@ -1,36 +1,85 @@
-import { useRef, useMemo, Suspense, useEffect, useState } from 'react'
-import { Canvas, useFrame, useLoader } from '@react-three/fiber'
+import { useRef, useMemo, Suspense, forwardRef, useImperativeHandle, useState } from 'react'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Points, PointMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { PCDLoader } from 'three-stdlib'
 
 type TrackingMode = 'contact' | 'nav' | 'default'
 
-function PointsModel({ url, isTrackingRequested, trackingMode }: { url?: string; isTrackingRequested: boolean; trackingMode: TrackingMode }) {
+interface PointsModelProps {
+  url?: string;
+  isTrackingRequested: boolean;
+  trackingMode: TrackingMode;
+  isCaptureMode?: boolean;
+}
+
+const PointsModel = forwardRef(({ url, isTrackingRequested, trackingMode, isCaptureMode = false }: PointsModelProps, forwardRef) => {
   const ref = useRef<THREE.Group>(null!)
   const pcd = url ? useLoader(PCDLoader, url) : null
+  const { gl, scene, camera } = useThree()
   
-  // Global mouse position tracking
-  const mouse = useRef({ x: 0, y: 0 })
-  
-  // Track continuous rotation for the turntable effect
+  // Track continuous rotation for the turntable effect (even if disabled, we keep the ref)
   const turntableRotation = useRef(0)
 
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1
-      mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
-  
   // Center the geometry once it's loaded
   useMemo(() => {
     if (pcd) {
       pcd.geometry.center()
     }
   }, [pcd])
+
+  // Expose the capture method to the parent
+  useImperativeHandle(forwardRef, () => ({
+    capture: () => {
+      // 1. Set front view
+      const target = new THREE.Vector3(0, 0, 0)
+      const distance = 2 // Match camera position
+      camera.position.set(0, 0, distance)
+      camera.lookAt(target)
+      camera.updateProjectionMatrix()
+
+      // 2. Render
+      gl.render(scene, camera)
+
+      // 3. Get Data URL
+      return gl.domElement.toDataURL("image/png")
+    },
+    captureSvg: () => {
+      if (!pcd) return null;
+      
+      const positions = pcd.geometry.attributes.position.array;
+      const count = pcd.geometry.attributes.position.count;
+      
+      // Match PNG capture camera setup
+      const target = new THREE.Vector3(0, 0, 0)
+      const distance = 2
+      camera.position.set(0, 0, distance)
+      camera.lookAt(target)
+      camera.updateProjectionMatrix()
+      
+      const width = gl.domElement.clientWidth;
+      const height = gl.domElement.clientHeight;
+      
+      let svgContent = "";
+      const pos = new THREE.Vector3();
+      
+      for (let i = 0; i < count; i++) {
+        pos.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+        pos.multiplyScalar(1.8); // Match pointsContent scale
+        
+        pos.project(camera);
+        
+        const x = (pos.x * 0.5 + 0.5) * width;
+        const y = (-pos.y * 0.5 + 0.5) * height;
+        
+        if (pos.z > -1 && pos.z < 1) {
+          svgContent += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="0.8" fill="#FF7A00" opacity="0.8" />`;
+        }
+      }
+      
+      return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background: transparent;">${svgContent}</svg>`;
+    }
+  }))
 
   const placeholderPoints = useMemo(() => {
     if (pcd) return null
@@ -45,55 +94,49 @@ function PointsModel({ url, isTrackingRequested, trackingMode }: { url?: string;
     return p
   }, [pcd])
 
-  useFrame((_state, delta) => {
+  useFrame((state, delta) => {
     if (!ref.current) return
-    const time = _state.clock.getElapsedTime()
+    const time = state.clock.getElapsedTime()
     
-    // 1. Update Turntable Rotation
-    // When NOT tracking, we increment it.
-    // When tracking, we lerp it to the nearest "front" position (multiple of 2PI)
-    // to prevent the "death spin" when switching modes.
-    if (!isTrackingRequested) {
-      turntableRotation.current += delta * 0.5
-    } else {
-      const nearestFullCircle = Math.round(turntableRotation.current / (Math.PI * 2)) * (Math.PI * 2)
-      turntableRotation.current = THREE.MathUtils.lerp(turntableRotation.current, nearestFullCircle, 0.05)
+    if (isCaptureMode) {
+      ref.current.rotation.set(0, 0, 0)
+      ref.current.position.set(0, 0, 0)
+      return
     }
 
-    // 2. Calculate Tracking Offset
-    // Contact hover gets a stronger preset bias to make the head look down/right.
+    // Use state.mouse (canvas relative)
+    const targetX = isTrackingRequested ? state.mouse.x : 0
+    const targetY = isTrackingRequested ? state.mouse.y : 0
+
     const directionalX = trackingMode === 'contact'
-      ? THREE.MathUtils.clamp(mouse.current.x * 0.35 - 0.30, -1, 1)
-      : mouse.current.x
+      ? THREE.MathUtils.clamp(targetX * 0.35 - 0.30, -1, 1)
+      : targetX
     const directionalY = trackingMode === 'contact'
-      ? THREE.MathUtils.clamp(mouse.current.y * 0.25 - 0.50, -1, 1)
-      : mouse.current.y
+      ? THREE.MathUtils.clamp(targetY * 0.25 - 0.50, -1, 1)
+      : targetY
 
-    const trackingRotationY = isTrackingRequested ? (directionalX * Math.PI) / 2.4 : 0
-    const trackingRotationX = isTrackingRequested ? (directionalY * Math.PI) / 5.5 : 0
-    const trackingPositionX = isTrackingRequested ? directionalX * 0.15 : 0
-    const trackingPositionY = isTrackingRequested ? directionalY * 0.15 : 0
+    const trackingRotationY = isTrackingRequested ? (directionalX * Math.PI) / 2.5 : 0
+    const trackingRotationX = isTrackingRequested ? -(directionalY * Math.PI) / 4 : 0
+    const trackingPositionX = isTrackingRequested ? directionalX * 0.1 : 0
+    const trackingPositionY = isTrackingRequested ? directionalY * 0.1 : 0
 
-    // 3. Combine rotations
     const targetRotationY = turntableRotation.current + trackingRotationY
     const targetRotationX = trackingRotationX
     
-    const idleSwayX = Math.sin(time * 0.5) * 0.05
-    const idleSwayY = Math.cos(time * 0.3) * 0.05
+    const idleSwayX = Math.sin(time * 0.5) * 0.02
+    const idleSwayY = Math.cos(time * 0.3) * 0.02
 
-    // Smooth rotation follow
     ref.current.rotation.y = THREE.MathUtils.lerp(
       ref.current.rotation.y, 
       targetRotationY + (isTrackingRequested ? idleSwayY : 0), 
-      0.08
+      0.1
     )
     ref.current.rotation.x = THREE.MathUtils.lerp(
       ref.current.rotation.x, 
-      -targetRotationX + (isTrackingRequested ? idleSwayX : 0), 
-      0.08
+      targetRotationX + (isTrackingRequested ? idleSwayX : 0), 
+      0.1
     )
 
-    // Smooth parallax position shift
     ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, trackingPositionX, 0.05)
     ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, trackingPositionY, 0.05)
   })
@@ -127,29 +170,68 @@ function PointsModel({ url, isTrackingRequested, trackingMode }: { url?: string;
       {pointsContent}
     </group>
   )
-}
+})
 
-export default function PointCloudHead({ isExternalTracking = false, trackingMode = 'default' }: { isExternalTracking?: boolean; trackingMode?: TrackingMode }) {
+export default forwardRef(function PointCloudHead(
+  { isExternalTracking = false, trackingMode = 'default', isCaptureMode = false }: 
+  { isExternalTracking?: boolean; trackingMode?: TrackingMode; isCaptureMode?: boolean }, 
+  ref
+) {
   const scanUrl = '/PepijnPCD.pcd'
-  const [isHovered, setIsHovered] = useState(false)
+  const modelRef = useRef<{ capture: () => string; captureSvg: () => string | null }>(null)
+  const [isInternalHovering, setIsInternalHovering] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    exportToPng: () => {
+      if (modelRef.current) {
+        const dataUrl = modelRef.current.capture()
+        const a = document.createElement("a")
+        a.href = dataUrl
+        a.download = "pcd-front.png"
+        a.click()
+        return dataUrl
+      }
+    },
+    exportToSvg: () => {
+      if (modelRef.current) {
+        const svg = modelRef.current.captureSvg()
+        if (svg) {
+          const blob = new Blob([svg], { type: 'image/svg+xml' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement("a")
+          a.href = url
+          a.download = "pcd-front.svg"
+          a.click()
+          URL.revokeObjectURL(url)
+          return svg
+        }
+      }
+    }
+  }))
 
   return (
     <div 
       className='w-full h-full relative overflow-hidden bg-transparent touch-none'
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onPointerEnter={() => setIsInternalHovering(true)}
+      onPointerLeave={() => setIsInternalHovering(false)}
     >
       <div className='absolute inset-0 pointer-events-none border-[1px] border-[#FF7A00]/20 z-10' />
-      <Canvas camera={{ position: [0, 0, 2], fov: 45 }} style={{ touchAction: 'none' }}>
+      <Canvas 
+        camera={{ position: [0, 0, 2], fov: 45 }} 
+        gl={{ preserveDrawingBuffer: true }}
+        style={{ touchAction: 'none' }}
+      >
         <ambientLight intensity={2} />
         <Suspense fallback={null}>
           <PointsModel
+            ref={modelRef}
             url={scanUrl}
-            isTrackingRequested={isExternalTracking || isHovered}
-            trackingMode={trackingMode}
+            isTrackingRequested={isExternalTracking || isInternalHovering}
+            trackingMode={isExternalTracking ? trackingMode : 'default'}
+            isCaptureMode={isCaptureMode}
           />
         </Suspense>
       </Canvas>
     </div>
   )
-}
+})

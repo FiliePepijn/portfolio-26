@@ -110,8 +110,8 @@ function App() {
                  
                  {/* PCD Rendering */}
                  <PointCloudHead
-                   isExternalTracking={isHoveringContact || isHoveringNav}
-                   trackingMode={isHoveringContact ? 'contact' : isHoveringNav ? 'nav' : 'default'}
+                   isExternalTracking={isHoveringContact}
+                   trackingMode={isHoveringContact ? 'contact' : 'default'}
                  />
               </div>
               
