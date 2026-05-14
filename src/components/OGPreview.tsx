@@ -1,8 +1,9 @@
 import React from 'react';
+import PointCloudHead from './PointCloudHead';
 
 const OGPreview: React.FC = () => {
   return (
-    <div className="w-[1200px] h-[630px] bg-[#121212] text-white font-satoshi overflow-hidden relative border-4 border-[#FF7A00] flex flex-col">
+    <div className="w-300 h-157.5 bg-[#121212] text-white font-satoshi  relative  flex flex-col">
       {/* NOISE / GRAIN OVERLAY */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
@@ -10,7 +11,7 @@ const OGPreview: React.FC = () => {
       <div className="absolute inset-0 opacity-10 bg-grid-lines pointer-events-none" />
 
       {/* TOP BAR: SYSTEM STATUS */}
-      <div className="h-12 border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-6 z-10">
+      <div className="h-30 border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-6 z-10">
         <div className="flex gap-3 items-center">
           <div className="w-32 h-2.5 bg-[#FF7A00]/30 rounded-full" />
           <div className="w-3.5 h-3.5 bg-[#FF7A00] rounded-full animate-pulse" />
@@ -25,8 +26,8 @@ const OGPreview: React.FC = () => {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex border-b-2 border-[#FF7A00]/30 z-10">
         {/* LEFT COLUMN: IDENTITY */}
-        <div className="flex-1 p-16 flex flex-col justify-center gap-8 relative border-r-2 border-[#FF7A00]/30 bg-[#121212]/50">
-          <div className="space-y-[-2rem]">
+        <div className="flex-1 p-16 flex flex-col gap-8 relative border-r-2 border-[#FF7A00]/30 bg-[#121212]/50">
+          <div className="">
             <h1 className="font-clash font-bold tracking-tighter leading-none text-[#FF7A00] uppercase text-[160px]">
               PEPIJN
             </h1>
@@ -44,31 +45,43 @@ const OGPreview: React.FC = () => {
           </p>
         </div>
 
-        {/* RIGHT COLUMN: SCAN METADATA */}
+        {/* RIGHT COLUMN: SCAN & METADATA */}
         <div className="w-[400px] flex flex-col bg-black/40">
-           <div className="flex-1 p-12 flex flex-col gap-10 justify-center">
-              <div className="space-y-6 font-brutalist-mono text-sm uppercase">
-                <div className="flex justify-between border-b border-white/10 pb-3">
+           {/* SCAN INTERFACE */}
+           <div className="h-[280px] border-b-2 border-[#FF7A00]/30 relative bg-black overflow-hidden">
+              <div className="absolute top-3 right-4 font-brutalist-mono text-[10px] text-[#FF7A00] z-20 bg-black/50 px-2 py-1 border border-[#FF7A00]/20 uppercase tracking-tighter">STATUS: IDENTIFIED</div>
+              <div className="absolute bottom-3 left-4 font-brutalist-mono text-[10px] text-[#FF7A00] z-20 bg-black/50 px-2 py-1 border border-[#FF7A00]/20 uppercase tracking-tighter">SCAN_RES: HIGH_DENSITY</div>
+              
+              <PointCloudHead 
+                isExternalTracking={false} 
+                trackingMode="default" 
+                isCaptureMode={true}
+              />
+           </div>
+
+           <div className="flex-1 p-4 flex flex-col gap-8 justify-center">
+              <div className="space-y-4 font-brutalist-mono text-sm uppercase">
+                <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="opacity-40">Subject_ID</span>
                   <span className="text-[#FF7A00]">Latour, P.</span>
                 </div>
-                <div className="flex justify-between border-b border-white/10 pb-3">
+                <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="opacity-40">Status</span>
                   <span className="text-[#FF7A00]">IDENTIFIED</span>
                 </div>
-                <div className="flex justify-between border-b border-white/10 pb-3">
+                <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="opacity-40">Data_State</span>
                   <span className="text-[#FF7A00]">SYNCED</span>
                 </div>
-                <div className="flex justify-between border-b border-white/10 pb-3">
+                <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="opacity-40">Origin</span>
                   <span className="text-[#FF7A00]">Helmond_NL</span>
                 </div>
               </div>
 
-              <div className="p-6 border-2 border-[#FF7A00]/20 bg-[#FF7A00]/5 rounded-sm">
+              <div className="p-4 border-2 border-[#FF7A00]/20 bg-[#FF7A00]/5 rounded-sm">
                 <div className="font-brutalist-mono text-[10px] text-[#FF7A00] opacity-50 mb-2">SYSTEM_SIGNATURE</div>
-                <div className="h-12 flex items-end gap-1">
+                <div className="h-10 flex items-end gap-1">
                    {[40, 70, 45, 90, 65, 30, 85, 50, 75, 40].map((h, i) => (
                      <div key={i} className="flex-1 bg-[#FF7A00]/40" style={{ height: `${h}%` }} />
                    ))}
@@ -89,10 +102,10 @@ const OGPreview: React.FC = () => {
         </div>
       </div>
       
-      {/* SCANNER LINE EFFECT */}
+      {/* SCANNER LINE EFFECT
       <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden opacity-20">
         <div className="w-full h-[2px] bg-[#FF7A00] absolute top-1/4 left-0" />
-      </div>
+      </div> */}
     </div>
   );
 };
