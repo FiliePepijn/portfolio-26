@@ -5,18 +5,34 @@ async function capture() {
     let client;
     try {
         client = await CDP();
-        const {Page, Emulation, Runtime} = client;
+        const {Page, Emulation, Runtime, Log, Network} = client;
         
         await Page.enable();
         await Runtime.enable();
+        await Log.enable();
+        await Network.enable();
+
+        Network.responseReceived((params) => {
+            if (params.response.status === 404) {
+                console.log('404 RESOURCE:', params.response.url);
+            }
+        });
+
+        client.on('Runtime.consoleAPICalled', (params) => {
+            console.log('BROWSER CONSOLE:', ...params.args.map(a => a.value || a.description));
+        });
+
+        client.on('Log.entryAdded', (params) => {
+            console.log('BROWSER LOG:', params.entry.text);
+        });
         
         console.log('Navigating to http://localhost:5173/?preview=og...');
         await Page.navigate({url: 'http://localhost:5173/?preview=og'});
         await Page.loadEventFired();
         
-        // Wait a bit for fonts/noise overlay to load
-        console.log('Waiting for content to settle...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Wait for PCD and fonts
+        console.log('Waiting for content to settle (8 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 8000));
         
         const width = 1200;
         const height = 630;

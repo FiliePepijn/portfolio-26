@@ -26,7 +26,7 @@ const OGPreview: React.FC = () => {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex border-b-2 border-[#FF7A00]/30 z-10">
         {/* LEFT COLUMN: IDENTITY */}
-        <div className="flex-1 p-16 flex flex-col gap-8 relative border-r-2 border-[#FF7A00]/30 bg-[#121212]/50">
+        <div className="flex-1 p-8 flex flex-col gap-8 relative border-r-2 border-[#FF7A00]/30 bg-[#121212]/50">
           <div className="">
             <h1 className="font-clash font-bold tracking-tighter leading-none text-[#FF7A00] uppercase text-[160px]">
               PEPIJN
@@ -59,7 +59,7 @@ const OGPreview: React.FC = () => {
               />
            </div>
 
-           <div className="flex-1 p-4 flex flex-col gap-8 justify-center">
+           <div className="flex-1 p-4 flex flex-col justify-between">
               <div className="space-y-4 font-brutalist-mono text-sm uppercase">
                 <div className="flex justify-between border-b border-white/10 pb-2">
                   <span className="opacity-40">Subject_ID</span>
@@ -92,7 +92,7 @@ const OGPreview: React.FC = () => {
       </div>
 
       {/* BOTTOM BAR */}
-      <div className="h-12 bg-[#121212] flex items-center px-8 justify-between z-10">
+      <div className="h-9 bg-[#121212] flex items-center px-8 justify-between z-10">
         <div className="font-brutalist-mono text-xs text-[#FF7A00] tracking-[0.3em] uppercase opacity-60">
           WWW.PEPIJNLATOUR.COM // V1.0.0_STABLE
         </div>
