@@ -3,7 +3,7 @@ import PointCloudHead from './PointCloudHead';
 
 const OGPreview: React.FC = () => {
   return (
-    <div className="w-300 h-157.5 bg-[#121212] text-white font-satoshi  relative  flex flex-col">
+    <div className="w-[1200px] h-[630px] bg-[#121212] text-white font-satoshi  relative  flex flex-col">
       {/* NOISE / GRAIN OVERLAY */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
@@ -11,7 +11,7 @@ const OGPreview: React.FC = () => {
       <div className="absolute inset-0 opacity-10 bg-grid-lines pointer-events-none" />
 
       {/* TOP BAR: SYSTEM STATUS */}
-      <div className="h-30 border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-6 z-10">
+      <div className="h-[120px] border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-6 z-10">
         <div className="flex gap-3 items-center">
           <div className="w-32 h-2.5 bg-[#FF7A00]/30 rounded-full" />
           <div className="w-3.5 h-3.5 bg-[#FF7A00] rounded-full animate-pulse" />

@@ -7,7 +7,7 @@ import { PCDLoader } from 'three-stdlib'
 type TrackingMode = 'contact' | 'nav' | 'default'
 
 interface PointsModelProps {
-  url?: string;
+  url: string;
   isTrackingRequested: boolean;
   trackingMode: TrackingMode;
   isCaptureMode?: boolean;
@@ -15,7 +15,7 @@ interface PointsModelProps {
 
 const PointsModel = forwardRef(({ url, isTrackingRequested, trackingMode, isCaptureMode = false }: PointsModelProps, forwardRef) => {
   const ref = useRef<THREE.Group>(null!)
-  const pcd = url ? useLoader(PCDLoader, url) : null
+  const pcd = useLoader(PCDLoader, url)
   const { gl, scene, camera } = useThree()
   
   // Track continuous rotation for the turntable effect (even if disabled, we keep the ref)
@@ -220,6 +220,7 @@ export default forwardRef(function PointCloudHead(
         camera={{ position: [0, 0, 2], fov: 45 }} 
         gl={{ preserveDrawingBuffer: true }}
         style={{ touchAction: 'none' }}
+        dpr={[1, 2]}
       >
         <ambientLight intensity={2} />
         <Suspense fallback={null}>
