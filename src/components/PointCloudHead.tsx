@@ -94,7 +94,7 @@ const PointsModel = forwardRef(({ url, isTrackingRequested, trackingMode, isCapt
     return p
   }, [pcd])
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!ref.current) return
     const time = state.clock.getElapsedTime()
     

@@ -13,7 +13,6 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 function App() {
   const container = useRef<HTMLDivElement>(null)
   const [isHoveringContact, setIsHoveringContact] = useState(false)
-  const [isHoveringNav, setIsHoveringNav] = useState(false)
 
   const isOGPreview = new URLSearchParams(window.location.search).get('preview') === 'og';
 
@@ -148,8 +147,6 @@ function App() {
           {/* BOTTOM BAR: LOCAL NAVIGATION */}
           <div 
             className="h-12 bg-[#121212] flex items-center px-6 gap-8 overflow-x-auto no-scrollbar"
-            onMouseEnter={() => setIsHoveringNav(true)}
-            onMouseLeave={() => setIsHoveringNav(false)}
           >
             {[
               { name: 'github', url: 'https://github.com/FiliePepijn' },
