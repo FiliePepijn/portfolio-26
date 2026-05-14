@@ -1,4 +1,4 @@
-import { useRef, useMemo, Suspense, forwardRef, useImperativeHandle, useState } from 'react'
+import { useRef, useMemo, Suspense, forwardRef, useImperativeHandle, useState, useEffect } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Points, PointMaterial } from '@react-three/drei'
 import * as THREE from 'three'
@@ -11,6 +11,48 @@ interface PointsModelProps {
   isTrackingRequested: boolean;
   trackingMode: TrackingMode;
   isCaptureMode?: boolean;
+}
+
+const SVGPointCloud = ({ url }: { url: string }) => {
+  const [points, setPoints] = useState<{ x: number, y: number }[]>([])
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    const loader = new PCDLoader()
+    loader.load(url, (pcd) => {
+      pcd.geometry.center()
+      const positions = pcd.geometry.attributes.position.array
+      const count = pcd.geometry.attributes.position.count
+      
+      // Simple orthographic projection for the SVG capture
+      const projected: { x: number, y: number }[] = []
+      for (let i = 0; i < count; i++) {
+        const x = positions[i * 3] * 1.8
+        const y = positions[i * 3 + 1] * 1.8
+        const z = positions[i * 3 + 2] * 1.8
+        
+        // Basic depth check for front-face only-ish
+        if (z > -0.5) {
+          projected.push({
+            x: (x * 120) + 200, // Scale and center
+            y: (-y * 120) + 140
+          })
+        }
+      }
+      setPoints(projected)
+    }, undefined, () => setError(true))
+  }, [url])
+
+  if (error) return <div className="text-[#FF7A00] p-4 font-brutalist-mono text-[10px]">FAILED_TO_LOAD_PCD</div>
+  if (points.length === 0) return <div className="text-[#FF7A00] p-4 font-brutalist-mono text-[10px] animate-pulse">LOADING_DATA...</div>
+
+  return (
+    <svg width="400" height="280" viewBox="0 0 400 280" className="w-full h-full">
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="0.6" fill="#FF7A00" opacity="0.8" />
+      ))}
+    </svg>
+  )
 }
 
 const PointsModel = forwardRef(({ url, isTrackingRequested, trackingMode, isCaptureMode = false }: PointsModelProps, forwardRef) => {
@@ -216,23 +258,27 @@ export default forwardRef(function PointCloudHead(
       onPointerLeave={() => setIsInternalHovering(false)}
     >
       <div className='absolute inset-0 pointer-events-none border-[1px] border-[#FF7A00]/20 z-10' />
-      <Canvas 
-        camera={{ position: [0, 0, 2], fov: 45 }} 
-        gl={{ preserveDrawingBuffer: true }}
-        style={{ touchAction: 'none' }}
-        dpr={[1, 2]}
-      >
-        <ambientLight intensity={2} />
-        <Suspense fallback={null}>
-          <PointsModel
-            ref={modelRef}
-            url={scanUrl}
-            isTrackingRequested={isExternalTracking || isInternalHovering}
-            trackingMode={isExternalTracking ? trackingMode : 'default'}
-            isCaptureMode={isCaptureMode}
-          />
-        </Suspense>
-      </Canvas>
+      {isCaptureMode ? (
+        <SVGPointCloud url={scanUrl} />
+      ) : (
+        <Canvas 
+          camera={{ position: [0, 0, 2], fov: 45 }} 
+          gl={{ preserveDrawingBuffer: true }}
+          style={{ touchAction: 'none' }}
+          dpr={[1, 2]}
+        >
+          <ambientLight intensity={2} />
+          <Suspense fallback={null}>
+            <PointsModel
+              ref={modelRef}
+              url={scanUrl}
+              isTrackingRequested={isExternalTracking || isInternalHovering}
+              trackingMode={isExternalTracking ? trackingMode : 'default'}
+              isCaptureMode={isCaptureMode}
+            />
+          </Suspense>
+        </Canvas>
+      )}
     </div>
   )
 })
