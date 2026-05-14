@@ -6,6 +6,7 @@ import PointCloudHead from './components/PointCloudHead'
 import Projects from './components/Projects'
 import ContactForm from './components/ContactForm'
 import SplitText from './components/SplitText'
+import OGPreview from './components/OGPreview'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
@@ -14,7 +15,10 @@ function App() {
   const [isHoveringContact, setIsHoveringContact] = useState(false)
   const [isHoveringNav, setIsHoveringNav] = useState(false)
 
+  const isOGPreview = new URLSearchParams(window.location.search).get('preview') === 'og';
+
   useGSAP(() => {
+    if (isOGPreview) return;
     // Header Animation
     gsap.from('.header-reveal', {
       y: -50,
@@ -24,6 +28,10 @@ function App() {
       ease: 'power4.out'
     })
   }, { scope: container })
+
+  if (isOGPreview) {
+    return <OGPreview />;
+  }
 
   const scrollToContact = () => {
     const el = document.getElementById('contact-section')

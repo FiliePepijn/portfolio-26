@@ -10,25 +10,23 @@ async function capture() {
         await Page.enable();
         await Runtime.enable();
         
-        console.log('Navigating to http://localhost:5173...');
-        await Page.navigate({url: 'http://localhost:5173'});
+        console.log('Navigating to http://localhost:5173/?preview=og...');
+        await Page.navigate({url: 'http://localhost:5173/?preview=og'});
         await Page.loadEventFired();
         
-        // Wait a bit for animations/dynamic content (especially since it's a 3D portfolio)
+        // Wait a bit for fonts/noise overlay to load
         console.log('Waiting for content to settle...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Get the full page metrics
-        const {contentSize} = await Page.getLayoutMetrics();
-        const width = Math.ceil(contentSize.width);
-        const height = Math.ceil(contentSize.height);
+        const width = 1200;
+        const height = 630;
         
         console.log(`Setting viewport to ${width}x${height}...`);
         
         await Emulation.setDeviceMetricsOverride({
             width: width,
             height: height,
-            deviceScaleFactor: 1,
+            deviceScaleFactor: 2, // High DPI for crispness
             mobile: false
         });
         
@@ -42,12 +40,11 @@ async function capture() {
                 height: height,
                 scale: 1
             },
-            fromSurface: true,
-            captureBeyondViewport: true
+            fromSurface: true
         });
         
-        fs.writeFileSync('screenshot.png', Buffer.from(data, 'base64'));
-        console.log('Screenshot saved to screenshot.png');
+        fs.writeFileSync('public/og-image.png', Buffer.from(data, 'base64'));
+        console.log('OG Image saved to public/og-image.png');
         
     } catch (err) {
         console.error('Error during screenshot:', err);
