@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Clash Display - Variable */
+  @font-face {
+    font-family: 'Clash Display';
+    src: url('/fonts/clash-display/Fonts/WEB/fonts/ClashDisplay-Variable.woff2') format('woff2'),
+         url('/fonts/clash-display/Fonts/WEB/fonts/ClashDisplay-Variable.woff') format('woff'),
+         url('/fonts/clash-display/Fonts/WEB/fonts/ClashDisplay-Variable.ttf') format('truetype');
+    font-weight: 200 700;
+    font-display: swap;
+    font-style: normal;
+  }
+
+  /* Satoshi - Variable (Full weight range) */
+  @font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-Variable.woff2') format('woff2'),
+         url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-Variable.woff') format('woff'),
+         url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-Variable.ttf') format('truetype');
+    font-weight: 300 900;
+    font-display: swap;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Satoshi';
+    src: url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-VariableItalic.woff2') format('woff2'),
+         url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-VariableItalic.woff') format('woff'),
+         url('/fonts/satoshi/Fonts/WEB/fonts/Satoshi-VariableItalic.ttf') format('truetype');
+    font-weight: 300 900;
+    font-display: swap;
+    font-style: italic;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');
+
+  :root {
+    --brand-orange: #FF7A00;
+    --brand-dark: #121212;
+  }
+}
+
+.font-clash {
+  font-family: 'Clash Display', sans-serif;
+}
+
+.font-satoshi {
+  font-family: 'Satoshi', sans-serif;
+}
+
+.font-brutalist-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Simple Grid Lines */
+.bg-grid-lines {
+  background-image: 
+    linear-gradient(rgba(255, 122, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 122, 0, 0.15) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Grainy Texture */
+.bg-grain {
+  position: relative;
+}
+
+.bg-grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.05;
+  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+}
+
+/* Carousel hiding scrollbars but keeping functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes scanner-line {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+.animate-scanner-line {
+  animation: scanner-line 4s linear infinite;
+}
