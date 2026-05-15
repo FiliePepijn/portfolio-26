@@ -7,11 +7,36 @@ export default function ContactForm() {
     message: ''
   })
 
-  const handleSubmit = (e: FormEvent) => {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    console.log('Form submission:', formData)
-    // Add logic for actual data transfer here if needed
-    alert('TRANSMISSION_RECEIVED: Data logged to console.')
+    setStatus('sending')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setStatus('success')
+        setFormData({ name: '', email: '', message: '' })
+      } else {
+        throw new Error(result.error || 'Failed to send transmission.')
+      }
+    } catch (err: any) {
+      console.error('Submission error:', err)
+      setStatus('error')
+      setErrorMessage(err.message || 'TRANSMISSION_FAILED: Connection interrupt.')
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -79,9 +104,27 @@ export default function ContactForm() {
               />
             </div>
             
-            <button type="submit" className="group w-full py-4 bg-[#FF7A00] text-[#121212] text-2xl md:text-4xl font-clash tracking-tighter font-bold uppercase hover:bg-white transition-colors relative overflow-hidden">
-              <span className="relative z-10">Send_Transmission</span>
+            <button 
+              type="submit" 
+              disabled={status === 'sending'}
+              className="group w-full py-4 bg-[#FF7A00] text-[#121212] text-2xl md:text-4xl font-clash tracking-tighter font-bold uppercase hover:bg-white transition-colors relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="relative z-10">
+                {status === 'sending' ? 'Sending...' : 'Send_Transmission'}
+              </span>
             </button>
+
+            {status === 'success' && (
+              <div className="bg-green-500/20 border border-green-500 text-green-500 p-4 font-brutalist-mono text-xs uppercase">
+                TRANSMISSION_SUCCESS: Message received.
+              </div>
+            )}
+
+            {status === 'error' && (
+              <div className="bg-red-500/20 border border-red-500 text-red-500 p-4 font-brutalist-mono text-xs uppercase">
+                {errorMessage}
+              </div>
+            )}
           </form>
         </div>
       </div>
