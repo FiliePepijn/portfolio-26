@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "capture-og": "node screenshot.js",
-    "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "capture-og": "bun screenshot.js",
+    "preview": "bun run build && wrangler dev",
+    "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
