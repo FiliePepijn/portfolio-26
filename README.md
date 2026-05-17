@@ -1,73 +1,75 @@
-# React + TypeScript + Vite
+# Pepijn's Portfolio 2026
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance, visually-driven personal portfolio built with React 19, Three.js, and Tailwind CSS 4, deployed as a Cloudflare Worker with integrated assets.
 
-Currently, two official plugins are available:
+**Live at:** [platour.net](https://platour.net)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tech Stack
 
-## React Compiler
+- **Runtime & PM:** [Bun](https://bun.sh/) (Fastest package manager and runner)
+- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite 8](https://vitejs.dev/)
+- **Styling:** [Tailwind CSS 4.3.0](https://tailwindcss.com/) (using the new Vite plugin architecture)
+- **3D Graphics:** [Three.js](https://threejs.org/) with [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) & [Drei](https://github.com/pmndrs/drei)
+- **Animation:** [GSAP](https://gsap.com/) & [Framer Motion](https://www.framer.com/motion/)
+- **Deployment:** [Cloudflare Workers](https://workers.cloudflare.com/) (using the new "Workers with Assets" platform)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Getting Started
 
-## Expanding the ESLint configuration
+### Prerequisites
+Make sure you have [Bun](https://bun.sh/) installed.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+```bash
+bun install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Development
+Starts the Vite dev server.
+```bash
+bun dev
 ```
+
+### Build
+Compiles both the Client assets and the Worker script.
+```bash
+bun run build
+```
+
+### Deployment
+Deploys the production build to Cloudflare.
+```bash
+bun run deploy
+```
+
+## 📂 Project Structure
+
+- `src/main.tsx`: Client-side entry point.
+- `src/worker.ts`: Cloudflare Worker entry point handling routing and SSR/Asset serving.
+- `src/components/`:
+    - `PointCloudHead.tsx`: Interactive 3D point cloud using Three.js.
+    - `SplitText.tsx`: Animated text components using GSAP.
+    - `Projects.tsx`: Portfolio projects showcase with Embla Carousel.
+- `public/fonts/`: Localized high-quality typography (Clash Display, Satoshi).
+- `screenshot.js`: Custom automation script for capturing OpenGraph images.
+
+## 🖼️ OG Image Generation
+
+The project includes a custom script to generate dynamic OG images by taking a screenshot of a specific preview route.
+
+1. Start the dev server: `bun dev`
+2. Run the capture script:
+```bash
+bun run capture-og
+```
+This will generate `public/og-image.png` using Chrome Remote Interface.
+
+## 🎨 Design Principles
+
+- **Fluid Typography:** Uses CSS `clamp()` and variables defined in `index.css` for seamless scaling across devices.
+- **Brutalist Aesthetics:** Combines sharp typography (JetBrains Mono) with grainy textures and grid-based layouts.
+- **Performance:** Leverages Bun for ultra-fast builds and Cloudflare's edge network for global delivery.
+
+---
+
+Built with ❤️ by Pepijn.
