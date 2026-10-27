@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import useEmblaCarousel from 'embla-carousel-react'
 
 const PROJECTS = [
-  { id: 1, title: 'SiteSculpt', category: 'WEB/UX', img: '/images/SiteSculpt.png', desc: 'A high-performance design engine for scalable web architectures.' },
-  { id: 2, title: 'Salve Mundi', category: 'COMMUNITY', img: '/images/Salvemundi.svg', desc: 'Centralized portal for the Salve Mundi academic community.' },
-  { id: 3, title: 'Superlocal Crawlers', category: 'CREATIVE/INTERACTIVE', img: '/images/SuperlocalCrawlers.svg', desc: 'Articulated creatures crawl through a landscape of photographs placed at their real locations, eat them, and slowly become made of the images.', url: 'https://crawlers.superlocal.discount' },
+  { id: 1, title: 'Superlocal Crawlers', category: 'CREATIVE/INTERACTIVE', img: '/images/SuperlocalCrawlers.svg', desc: 'Articulated creatures crawl through a landscape of photographs placed at their real locations, eat them, and slowly become made of the images.', url: 'https://crawlers.superlocal.discount' },
+  { id: 2, title: 'SiteSculpt', category: 'WEB/UX', img: '/images/SiteSculpt.png', desc: 'A high-performance design engine for scalable web architectures.' },
+  { id: 3, title: 'Salve Mundi', category: 'COMMUNITY', img: '/images/Salvemundi.svg', desc: 'Centralized portal for the Salve Mundi academic community.' },
 ]
 
 export default function Projects() {
