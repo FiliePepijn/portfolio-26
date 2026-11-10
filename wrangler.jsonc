@@ -25,5 +25,13 @@
   
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+
+  // Worker Previews: `wrangler preview` deploys the current branch as an isolated
+  // Preview of this Worker on <branch>-portfolio-26.<subdomain>.workers.dev (noindex).
+  // Top-level settings above are production (platour.net). Previews do not inherit
+  // secrets — set the JMAP_* / FROM_EMAIL / CONTACT_EMAIL secrets once with
+  // `wrangler preview base-config secret put <NAME>`.
+  "preview_urls": true,
+  "previews": {}
 }
