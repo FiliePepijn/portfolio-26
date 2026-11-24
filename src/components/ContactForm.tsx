@@ -46,7 +46,7 @@ export default function ContactForm() {
 
   return (
     <section className="py-[8vh] md:py-[10vh] px-4 md:px-6 max-w-[1400px] mx-auto">
-      <div className="@container border-4 border-[#FF7A00] bg-[#121212] p-6 md:p-12 relative overflow-hidden">
+      <div className="@container border-4 border-[#FF7A00] bg-[#121212]/85 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-0 bg-[#FF7A00] text-[#121212] px-3 py-0.5 font-brutalist-mono text-[10px] md:text-xs uppercase">
           SYSTEM_TRANSMISSION // INITIALIZE
         </div>
@@ -107,7 +107,7 @@ export default function ContactForm() {
             <button 
               type="submit" 
               disabled={status === 'sending'}
-              className="group w-full py-4 bg-[#FF7A00] text-[#121212] text-2xl md:text-4xl font-clash tracking-tighter font-bold uppercase hover:bg-white transition-colors relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group w-full py-4 bg-[#FF7A00] text-[#121212] text-xl md:text-2xl font-clash tracking-tighter font-bold uppercase hover:bg-white transition-colors relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative z-10">
                 {status === 'sending' ? 'Sending...' : 'Send_Transmission'}
