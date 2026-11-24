@@ -113,3 +113,81 @@
 .animate-scanner-line {
   animation: scanner-line 4s linear infinite;
 }
+
+/* ---------------- 3D scroll story ---------------- */
+/* Clash Display is tight by nature: give titles and buttons room between letters and words.
+   Unlayered, so it also wins over tracking utilities in shared components. */
+.story .font-clash {
+  letter-spacing: 0.025em;
+  word-spacing: 0.12em;
+}
+
+html { scroll-behavior: smooth; background: #121212; }
+
+.story-canvas {
+  position: fixed;
+  inset: 0;
+  height: 100lvh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.story-canvas.is-live { opacity: 1; }
+.story-canvas--off {
+  opacity: 1;
+  background: radial-gradient(circle at 70% 40%, rgba(255, 122, 0, 0.14), transparent 55%), #121212;
+}
+
+.chapter { position: relative; min-height: 100svh; }
+.chapter--tall { min-height: 170svh; }
+.chapter:first-of-type { min-height: 135svh; }
+
+.chapter__stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 4.5rem 1.25rem 2rem;
+}
+/* The first and every tall chapter centre their copy when the section is centred. */
+.chapter__copy { width: 100%; max-width: 40rem; }
+.chapter--left .chapter__stage { justify-content: flex-start; }
+.chapter--right .chapter__stage { justify-content: flex-end; }
+.chapter--center .chapter__stage { justify-content: center; text-align: center; }
+.chapter--center .chapter__copy { max-width: 70rem; text-shadow: 0 0 30px #0d0d0d, 0 0 12px #0d0d0d; }
+
+.chapter--contact { display: flex; align-items: center; }
+.chapter--footer { display: flex; align-items: flex-end; }
+
+@media (min-width: 768px) {
+  .chapter__stage { padding-inline: 6vw 8vw; }
+  .chapter__copy { max-width: min(44vw, 44rem); }
+}
+
+/* Keep copy clear of the chapter navigation's active label. */
+@media (min-width: 1024px) {
+  .chapter__stage { padding-right: max(10vw, 10rem); }
+}
+
+@media (max-width: 767px) {
+  /* Shapes live in the upper part of the screen, copy sits below. */
+  .chapter__stage { align-items: flex-end; padding-bottom: 6svh; }
+  .chapter--center .chapter__stage { align-items: center; }
+}
+
+/* Phones: a project card is nearly a screen tall, so it scrolls up under its mark
+   instead of sticking on top of it. */
+@media (max-width: 767px) {
+  .chapter--project { min-height: 0; padding: 90svh 0 12svh; }
+  .chapter--project .chapter__stage { position: static; height: auto; padding-block: 0; }
+  .chapter article h2 { font-size: 2rem; }
+  .chapter article { padding: 1rem; }
+  .chapter article dl { margin-top: 0.75rem; }
+  .chapter article ul { margin-top: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
