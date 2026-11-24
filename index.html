@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="is-loading">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -45,8 +45,141 @@
       ]
     }
     </script>
+    <!-- Start the slow downloads right away, in parallel with the page script. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" />
+    <link rel="preload" href="/fonts/clash-display/Fonts/WEB/fonts/ClashDisplay-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/satoshi/Fonts/WEB/fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/PepijnPCD.pcd" as="fetch" crossorigin />
+
+    <style>
+      /* Loading screen. Inline so it paints before any script arrives. */
+      html.is-loading { overflow: hidden; }
+      .loader {
+        position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+        background: #121212; color: #fff; font-family: 'JetBrains Mono', ui-monospace, monospace;
+        text-transform: uppercase; transition: opacity .7s ease, visibility .7s;
+      }
+      .loader::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background-image: linear-gradient(rgba(255,122,0,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,122,0,.06) 1px, transparent 1px);
+        background-size: 50px 50px;
+      }
+      .loader::after {
+        content: ""; position: absolute; inset-inline: 0; top: 0; height: 1px; pointer-events: none;
+        background: linear-gradient(90deg, transparent, #ff7a00, transparent); opacity: .6;
+        animation: loader-scan 2.6s linear infinite;
+      }
+      @keyframes loader-scan { from { transform: translateY(0); } to { transform: translateY(100vh); } }
+      .loader.is-done { opacity: 0; visibility: hidden; }
+      .loader__box { position: relative; width: min(30rem, 100% - 3rem); }
+      .loader__tag { font-size: 11px; letter-spacing: .24em; color: #ff7a00; margin: 0 0 1.25rem; }
+      .loader__count {
+        margin: 0; font-family: 'Clash Display', sans-serif; font-weight: 700; line-height: .85;
+        font-size: clamp(4.5rem, 16vw, 8.5rem); color: #ff7a00; font-variant-numeric: tabular-nums; letter-spacing: .02em;
+      }
+      .loader__count small { font-size: .35em; margin-left: .1em; color: rgba(255,255,255,.45); }
+      .loader__bar { margin-top: 1.5rem; height: 10px; border: 1px solid #ff7a00; padding: 2px; }
+      .loader__bar span { display: block; height: 100%; width: 100%; background: #ff7a00; transform-origin: left; transform: scaleX(0); transition: transform .2s linear; }
+      .loader__meta {
+        display: grid; grid-template-columns: auto 1fr; gap: .25rem 1.5rem; margin: 1rem 0 0;
+        font-size: 10px; letter-spacing: .12em;
+      }
+      .loader__meta dt { color: rgba(255,255,255,.45); }
+      .loader__meta dd { margin: 0; color: #ff7a00; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      @media (prefers-reduced-motion: reduce) {
+        .loader::after { animation: none; display: none; }
+        .loader { transition-duration: .2s; }
+      }
+    </style>
+    <noscript><style>html.is-loading { overflow: auto; } .loader { display: none; }</style></noscript>
   </head>
   <body>
+    <div class="loader" id="loader" role="progressbar" aria-label="Loading the 3D scene" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="loader__box">
+        <p class="loader__tag">Latour, P. // Signal acquisition</p>
+        <p class="loader__count"><span id="loader-count">000</span><small>%</small></p>
+        <div class="loader__bar"><span id="loader-bar"></span></div>
+        <dl class="loader__meta">
+          <dt>Status</dt><dd id="loader-status">Decoding</dd>
+          <dt>Task</dt><dd id="loader-task">Fetching code</dd>
+        </dl>
+      </div>
+    </div>
+    <script>
+      // Real progress: first the files the scene needs (half the bar), then the engine's own steps.
+      ;(function () {
+        var root = document.documentElement
+        var el = document.getElementById('loader')
+        var count = document.getElementById('loader-count')
+        var bar = document.getElementById('loader-bar')
+        var task = document.getElementById('loader-task')
+        var status = document.getElementById('loader-status')
+        // [url fragment, weight]: roughly each file's compressed size.
+        var files = [['/assets/index-', 3], ['/assets/shapes-', 4], ['/assets/three.core', 3], ['/assets/engine-', .5], ['/PepijnPCD.pcd', 1], ['ClashDisplay-Variable', .5], ['Satoshi-Variable', .5]]
+        var total = files.reduce(function (s, f) { return s + f[1] }, 0)
+        var seen = {}
+        var net = 0, work = 0, shown = 0, finished = false, raf = 0, last = 0
+        function target() { return Math.min(.5 * net + .5 * work, .99) }
+        function draw() {
+          var pct = Math.round(shown * 100)
+          count.textContent = String(pct).padStart(3, '0')
+          bar.style.transform = 'scaleX(' + shown + ')'
+          el.setAttribute('aria-valuenow', pct)
+        }
+        // Time based, so the bar keeps up even when the 3D scene makes frames slow.
+        function paint(now) {
+          raf = 0
+          var t = target()
+          shown += (t - shown) * (1 - Math.exp(-(now - (last || now - 16)) / 150))
+          last = now
+          if (t - shown < .002) shown = t
+          draw()
+          if (shown < t) raf = requestAnimationFrame(paint)
+          else last = 0
+        }
+        function kick() { if (!raf && !finished) raf = requestAnimationFrame(paint) }
+        function mark(name) {
+          for (var i = 0; i < files.length; i++) {
+            var f = files[i]
+            if (!seen[f[0]] && name.indexOf(f[0]) !== -1) { seen[f[0]] = 1; net += f[1] / total; kick() }
+          }
+        }
+        function close() {
+          status.textContent = 'Identified'
+          el.classList.add('is-done')
+          root.classList.remove('is-loading')
+          setTimeout(function () { el.remove() }, 900)
+        }
+        try {
+          performance.getEntriesByType('resource').forEach(function (e) { mark(e.name) })
+          new PerformanceObserver(function (list) { list.getEntries().forEach(function (e) { mark(e.name) }) }).observe({ type: 'resource', buffered: true })
+        } catch (e) {}
+        window.__storyLoader = {
+          /** Engine progress, 0..1, and what it is doing now. */
+          progress: function (value, label) {
+            net = 1
+            work = Math.max(work, value)
+            if (label) task.textContent = label
+            kick()
+          },
+          done: function () {
+            if (finished) return
+            finished = true
+            cancelAnimationFrame(raf)
+            shown = 1
+            task.textContent = 'Ready'
+            draw()
+            setTimeout(close, 250)
+          },
+        }
+        // The social image capture has no 3D scene to wait for.
+        if (/[?&]preview=og/.test(location.search)) { el.remove(); root.classList.remove('is-loading'); return }
+        // Never hold the page hostage: show it anyway if the scene is very slow or never starts.
+        setTimeout(function () { window.__storyLoader.done() }, 20000)
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
