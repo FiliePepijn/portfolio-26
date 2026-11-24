@@ -1,16 +1,15 @@
 import * as THREE from 'three/webgpu'
-import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js'
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { ShapeName } from '../story/chapters'
+
+/** Files under public/models and public/images, listed at build time (see vite.config.ts). */
+declare const __PUBLIC_FILES__: string[]
+const PUBLIC_FILES = __PUBLIC_FILES__
 
 /** Every shape is `count` points as xyzw, where w is the point's brightness weight (0..1). */
 export type Shape = Float32Array
 
 /** Small seeded generator so the cloud looks the same on every visit. */
-function mulberry(seed: number) {
+export function mulberry(seed: number) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
@@ -19,23 +18,74 @@ function mulberry(seed: number) {
   }
 }
 
-function build(count: number, fill: (i: number, rnd: () => number, out: THREE.Vector4) => void, seed = 7): Shape {
+export function build(count: number, fill: (i: number, rnd: () => number, out: THREE.Vector4) => void, seed = 7): Shape {
   const rnd = mulberry(seed)
   const data = new Float32Array(count * 4)
   const v = new THREE.Vector4()
-  for (let i = 0; i < count; i++) {
+  for (let i = 0, o = 0; i < count; i++, o += 4) {
     v.set(0, 0, 0, rnd())
     fill(i, rnd, v)
-    data.set([v.x, v.y, v.z, v.w], i * 4)
+    data[o] = v.x
+    data[o + 1] = v.y
+    data[o + 2] = v.z
+    data[o + 3] = v.w
   }
   return data
 }
 
 // ---------------------------------------------------------------- you
 
+/**
+ * Reads the x, y, z of a PCD point cloud (ascii or binary float32). A few lines here instead of
+ * three's PCDLoader, which drags the whole WebGL build of three into the engine bundle.
+ */
+export async function loadPCD(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`${url}: ${response.status}`)
+  const buffer = await response.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  // The header is ascii and ends with the DATA line.
+  let end = 0
+  let header = ''
+  for (let line = ''; end < bytes.length; end++) {
+    const c = bytes[end]
+    if (c !== 10) { line += String.fromCharCode(c); continue }
+    header += line + '\n'
+    if (line.startsWith('DATA')) { end++; break }
+    line = ''
+  }
+  const field = (key: string) => header.match(new RegExp(`^${key} (.*)$`, 'm'))?.[1].trim().split(/\s+/) ?? []
+  const fields = field('FIELDS')
+  const sizes = field('SIZE').map(Number)
+  const types = field('TYPE')
+  const counts = field('COUNT').map(Number)
+  const points = Number(field('POINTS')[0])
+  const format = field('DATA')[0]
+  const axes = ['x', 'y', 'z'].map((a) => fields.indexOf(a))
+  if (axes.includes(-1) || !points) throw new Error(`${url}: no x y z`)
+  const out = new Float32Array(points * 3)
+  if (format === 'ascii') {
+    const rows = new TextDecoder().decode(bytes.subarray(end)).split('\n').filter((r) => r.trim())
+    for (let i = 0; i < points; i++) {
+      const values = rows[i].trim().split(/\s+/)
+      for (let a = 0; a < 3; a++) out[i * 3 + a] = parseFloat(values[axes[a]])
+    }
+  } else if (format === 'binary') {
+    const offsets: number[] = []
+    let stride = 0
+    fields.forEach((_f, k) => { offsets.push(stride); stride += sizes[k] * (counts[k] || 1) })
+    if (axes.some((k) => types[k] !== 'F' || sizes[k] !== 4)) throw new Error(`${url}: x y z are not float32`)
+    const view = new DataView(buffer, end)
+    for (let i = 0; i < points; i++) {
+      for (let a = 0; a < 3; a++) out[i * 3 + a] = view.getFloat32(i * stride + offsets[axes[a]], true)
+    }
+  } else throw new Error(`${url}: unsupported PCD data "${format}"`)
+  return out
+}
+
 async function headShape(count: number): Promise<Shape> {
-  const cloud = await new PCDLoader().loadAsync('/PepijnPCD.pcd')
-  const geometry = cloud.geometry
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(await loadPCD('/PepijnPCD.pcd'), 3))
   geometry.center()
   geometry.computeBoundingBox()
   const scale = 2.2 / geometry.boundingBox!.getSize(new THREE.Vector3()).y
@@ -188,7 +238,9 @@ async function superlocalShape(count: number): Promise<Shape> {
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   ctx.fillStyle = '#fff'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  const original = await loadImage('/images/superlocal-logo.png').catch(() => null)
+  const original = PUBLIC_FILES.includes('images/superlocal-logo.png')
+    ? await loadImage('/images/superlocal-logo.png').catch(() => null)
+    : null
   if (original) {
     const fitted = Math.min(canvas.width / original.naturalWidth, canvas.height / original.naturalHeight)
     ctx.drawImage(original, 0, 0, original.naturalWidth * fitted, original.naturalHeight * fitted)
@@ -305,57 +357,24 @@ async function nameShape(count: number): Promise<Shape> {
 
 /** A model at these paths replaces that project's flat mark. */
 const MODELS: Partial<Record<ShapeName, string>> = {
-  superlocal: '/models/superlocal.glb',
-  sitesculpt: '/models/sitesculpt.glb',
-  wiewanneer: '/models/wiewanneer.glb',
-  archerstats: '/models/archerstats.glb',
+  superlocal: 'models/superlocal.glb',
+  sitesculpt: 'models/sitesculpt.glb',
+  wiewanneer: 'models/wiewanneer.glb',
+  archerstats: 'models/archerstats.glb',
 }
 
-async function loadModel(url: string) {
-  const head = await fetch(url, { method: 'HEAD' })
-  // The single-page fallback answers missing files with index.html.
-  if (!head.ok || head.headers.get('content-type')?.includes('text/html')) return null
-  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url)
-  gltf.scene.updateMatrixWorld(true)
-  const parts: THREE.BufferGeometry[] = []
-  gltf.scene.traverse((object) => {
-    const mesh = object as THREE.Mesh
-    if (!mesh.isMesh) return
-    const source = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry
-    // Copy to plain floats so quantised attributes survive the transform.
-    const from = source.attributes.position
-    const array = new Float32Array(from.count * 3)
-    for (let i = 0; i < from.count; i++) array.set([from.getX(i), from.getY(i), from.getZ(i)], i * 3)
-    const part = new THREE.BufferGeometry()
-    part.setAttribute('position', new THREE.BufferAttribute(array, 3))
-    part.applyMatrix4(mesh.matrixWorld)
-    part.computeVertexNormals()
-    parts.push(part)
-  })
-  return parts.length ? mergeGeometries(parts) : null
-}
-
-/** Centres a model, fits it to the same box as the marks and scatters points over its surface. */
-function sampleModel(geometry: THREE.BufferGeometry, count: number): Shape {
-  geometry.center()
-  geometry.computeBoundingBox()
-  const size = geometry.boundingBox!.getSize(new THREE.Vector3())
-  const fit = Math.min(2.1 / size.y, 2.5 / Math.max(size.x, size.z))
-  geometry.scale(fit, fit, fit)
-  const sampler = new MeshSurfaceSampler(new THREE.Mesh(geometry))
-  // Present at runtime, missing from the published types.
-  ;(sampler as unknown as { setRandomGenerator(f: () => number): void }).setRandomGenerator(mulberry(11))
-  sampler.build()
-  const p = new THREE.Vector3()
-  const n = new THREE.Vector3()
-  const light = new THREE.Vector3(0.4, 0.7, 0.6).normalize()
-  return build(count, (_i, rnd, out) => {
-    sampler.sample(p, n)
-    // Bake a key light and a rim into the brightness so form reads without shading.
-    const lit = Math.max(0, n.dot(light))
-    const rim = 1 - Math.abs(n.z)
-    out.set(p.x, p.y, p.z, Math.min(0.95, 0.08 + lit * lit * 0.5 + rim * rim * 0.4 + rnd() * 0.12))
-  })
+/** Only models that were in public/ at build time are fetched, so a visit makes no requests that 404. */
+async function modelShape(name: ShapeName, count: number) {
+  const path = MODELS[name]
+  if (!path || !PUBLIC_FILES.includes(path)) return null
+  try {
+    // The glTF code is only downloaded when a model exists.
+    const { loadModelShape } = await import('./models')
+    return await loadModelShape(`/${path}`, count)
+  } catch (error) {
+    console.warn(`[story] could not load /${path}`, error)
+    return null
+  }
 }
 
 // ---------------------------------------------------------------- loading
@@ -386,18 +405,30 @@ const SHAPES: Record<ShapeName, (count: number) => Shape | Promise<Shape>> = {
   name: nameShape,
 }
 
-export async function createShapes(names: ShapeName[], count: number) {
-  const entries = await Promise.all([...new Set(names)].map(async (name): Promise<[ShapeName, Shape]> => {
+/**
+ * Builds every shape. Files download in parallel; the starts are staggered one frame apart so
+ * the synchronous sampling does not all land in one long task, and `onShape` reports progress.
+ */
+export async function createShapes(
+  names: ShapeName[], count: number,
+  onShape: (done: number, total: number, name: ShapeName) => void = () => {},
+  yieldFrame: () => Promise<void> = () => Promise.resolve(),
+) {
+  const unique = [...new Set(names)]
+  let start = Promise.resolve()
+  let done = 0
+  const entries = await Promise.all(unique.map(async (name): Promise<[ShapeName, Shape]> => {
+    let shape: Shape
+    start = start.then(yieldFrame)
     try {
-      const url = MODELS[name]
-      const model = url
-        ? await loadModel(url).catch((error) => (console.warn(`[story] could not load ${url}`, error), null))
-        : null
-      return [name, model ? sampleModel(model, count) : await SHAPES[name](count)]
+      await start
+      shape = (await modelShape(name, count)) ?? await SHAPES[name](count)
     } catch (error) {
       console.warn(`[story] shape "${name}" failed, showing noise instead`, error)
-      return [name, noiseShape(count)]
+      shape = noiseShape(count)
     }
+    onShape(++done, unique.length, name)
+    return [name, shape]
   }))
   return new Map(entries)
 }
