@@ -42,6 +42,16 @@ Deploys the production build to Cloudflare.
 bun run deploy
 ```
 
+### Preview (dev) deployment
+Deploys the current git branch as an isolated [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `<branch>-portfolio-26.<subdomain>.workers.dev`, without touching production.
+```bash
+bun run deploy:preview
+```
+Previews don't inherit production secrets. Set them once for all new Previews:
+```bash
+bunx wrangler preview base-config secret put JMAP_APP_PASSWORD
+```
+
 ## 📂 Project Structure
 
 - `src/main.tsx`: Client-side entry point.
