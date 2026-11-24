@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { loader } from '../story/loader'
+
+// Start downloading the engine as soon as the page script runs, not after React's first render.
+const engine = import('./engine')
 
 /** The one fixed canvas behind the page. The engine is loaded separately so text paints first. */
 export default function StoryCanvas() {
@@ -7,11 +11,15 @@ export default function StoryCanvas() {
 
   useEffect(() => {
     const controller = new AbortController()
-    import('./engine')
-      .then(({ startStory }) => startStory(host.current!, controller.signal))
+    engine
+      .then(({ startStory }) => startStory(host.current!, controller.signal, (value, label) => {
+        loader.progress(value, label)
+        if (value >= 1) loader.done()
+      }))
       .catch((error) => {
         console.error('[story] 3D unavailable', error)
         setFailed(true)
+        loader.done()
       })
     return () => controller.abort()
   }, [])
