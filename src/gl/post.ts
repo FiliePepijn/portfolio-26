@@ -12,7 +12,11 @@ export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, c
   const split = chromaticAberration(glow, aberration, vec2(0.5), float(1.08)) as unknown as Node<'vec4'>
 
   const vignette = smoothstep(0.25, 0.95, screenUV.sub(0.5).length()).oneMinus().mul(0.45).add(0.55)
-  const grain = hash(screenCoordinate.x.add(screenCoordinate.y.mul(4096)).add(time.mul(61).floor().mul(7919))).sub(0.5).mul(0.012)
+  // Build the grain seed in integer math. A float seed loses its low bits once the frame term passes 2^24
+  // (about 30 s in), so neighbouring pixels share a value and the grain smears into horizontal bands.
+  const frame = time.mul(61).floor().toUint()
+  const seed = screenCoordinate.x.toUint().add(screenCoordinate.y.toUint().mul(4096)).add(frame.mul(7919))
+  const grain = hash(seed).sub(0.5).mul(0.012)
 
   const pipeline = new THREE.RenderPipeline(renderer)
   pipeline.outputNode = vec4(split.rgb.mul(vignette).add(grain), 1)
