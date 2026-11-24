@@ -7,7 +7,16 @@ import { createScrollStory } from '../story/scroll'
 
 const { clamp, lerp, damp, smoothstep } = THREE.MathUtils
 
-export async function startStory(host: HTMLElement, signal: AbortSignal) {
+/** Lets the browser paint (and the loading bar move) between long synchronous steps. */
+const nextFrame = () => new Promise<void>((resolve) => {
+  // rAF stalls in background tabs; the timeout keeps loading going there.
+  const timeout = setTimeout(resolve, 50)
+  requestAnimationFrame(() => { clearTimeout(timeout); resolve() })
+})
+
+export type Progress = (value: number, label?: string) => void
+
+export async function startStory(host: HTMLElement, signal: AbortSignal, onProgress: Progress = () => {}) {
   const mobile = window.matchMedia('(max-width: 767px)')
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
   // `?webgl` and `?still` force the fallback and reduced-motion paths for testing.
@@ -15,6 +24,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal) {
   const forceWebGL = params.has('webgl')
   const forceStill = import.meta.env.DEV && params.has('still')
 
+  onProgress(0.02, 'Starting GPU')
   const renderer = new THREE.WebGPURenderer({ antialias: false, powerPreference: 'high-performance', forceWebGL })
   await renderer.init()
   if (signal.aborted) return renderer.dispose()
@@ -29,7 +39,11 @@ export async function startStory(host: HTMLElement, signal: AbortSignal) {
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 50)
   camera.position.z = 5
 
-  const shapes = await createShapes(CHAPTERS.map((c) => c.shape), count)
+  // Progress budget: GPU start 5%, shapes 55%, shader compiles 35%, first frame 5%.
+  onProgress(0.05, 'Sampling shapes')
+  const shapes = await createShapes(CHAPTERS.map((c) => c.shape), count, (done, total, name) => {
+    onProgress(0.05 + 0.55 * (done / total), `Sampled ${name}`)
+  }, nextFrame)
   if (signal.aborted) return renderer.dispose()
 
   const particles = createParticles(count, CHAPTERS.map((c) => shapes.get(c.shape)!))
@@ -76,8 +90,17 @@ export async function startStory(host: HTMLElement, signal: AbortSignal) {
   const poseOf = (c: Chapter): Pose => (mobile.matches ? c.mobile : c.desktop)
 
   // Compile every pass up front, with time stopped, so no chapter stutters on first arrival.
+  // One pass per frame, so the loading bar keeps moving while the GPU compiles.
   particles.uniforms.delta.value = 0
-  for (const update of particles.updates) renderer.compute(update)
+  for (const [n, update] of particles.updates.entries()) {
+    onProgress(0.6 + 0.35 * (n / particles.updates.length), `Compiling shader ${n + 1}/${particles.updates.length}`)
+    await nextFrame()
+    if (signal.aborted) return renderer.dispose()
+    renderer.compute(update)
+  }
+  onProgress(0.95, 'Compiling materials')
+  await nextFrame()
+  if (signal.aborted) return renderer.dispose()
 
   const frame = (delta: number, elapsed: number, position: number) => {
     const still = forceStill || reduced.matches
@@ -129,7 +152,10 @@ export async function startStory(host: HTMLElement, signal: AbortSignal) {
 
     renderer.compute(particles.updates[i])
     post.pipeline.render()
-    host.classList.add('is-live')
+    if (!host.classList.contains('is-live')) {
+      host.classList.add('is-live')
+      onProgress(1, 'Ready')
+    }
   }
 
   renderer.setAnimationLoop((timestamp) => {
