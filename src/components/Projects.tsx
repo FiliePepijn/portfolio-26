@@ -5,7 +5,6 @@ import useEmblaCarousel from 'embla-carousel-react'
 const PROJECTS = [
   { id: 1, title: 'Superlocal Crawlers', category: 'CREATIVE/INTERACTIVE', img: '/images/SuperlocalCrawlers.svg', desc: 'An installation at Dutch Design Week that makes AI data scraping visible. Students crawl through exhibitions scanning everything they encounter, and the collected data is brought back to SUPERLOCAL — a tiny supermarket where digital wares can be browsed.', url: 'https://crawlers.superlocal.discount' },
   { id: 2, title: 'SiteSculpt', category: 'WEB/UX', img: '/images/SiteSculpt.png', desc: 'A high-performance design engine for scalable web architectures.' },
-  { id: 3, title: 'Salve Mundi', category: 'COMMUNITY', img: '/images/Salvemundi.svg', desc: 'Website for Salve Mundi, a study association based in Eindhoven.' },
 ]
 
 export default function Projects() {

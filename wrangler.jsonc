@@ -20,6 +20,7 @@
   ],
   "main": "src/worker.ts",
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
   
