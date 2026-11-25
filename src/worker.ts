@@ -1,7 +1,11 @@
 export interface Env {
-  JMAP_SESSION_URL: string;
-  JMAP_USERNAME: string;
-  JMAP_APP_PASSWORD: string;
+  /** JMAP session URL. Defaults to Fastmail's. */
+  JMAP_SESSION_URL?: string;
+  /** Fastmail API token (Settings > Privacy & Security > API tokens). Sent as a Bearer token. */
+  JMAP_API_TOKEN?: string;
+  /** Legacy Basic auth for other JMAP servers; ignored when JMAP_API_TOKEN is set. */
+  JMAP_USERNAME?: string;
+  JMAP_APP_PASSWORD?: string;
   JMAP_MAIL_FROM: string;
   JMAP_MAIL_FROM_NAME: string;
   FROM_EMAIL: string;
@@ -20,8 +24,22 @@ type JmapMethodResponse = [string, any, string?];
 
 const JMAP_CORE_CAP = 'urn:ietf:params:jmap:core';
 const JMAP_MAIL_CAP = 'urn:ietf:params:jmap:mail';
+// Identity/get and EmailSubmission/set need this capability; Fastmail rejects them without it.
+const JMAP_SUBMISSION_CAP = 'urn:ietf:params:jmap:submission';
+const FASTMAIL_SESSION_URL = 'https://api.fastmail.com/jmap/session';
+
+const escapeHtml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
 const getJmapAuthorizationHeader = (env: Env) => {
+    if (env.JMAP_API_TOKEN) {
+        return `Bearer ${env.JMAP_API_TOKEN}`;
+    }
+
     const username = env.JMAP_USERNAME;
     const appPassword = env.JMAP_APP_PASSWORD;
 
@@ -29,7 +47,7 @@ const getJmapAuthorizationHeader = (env: Env) => {
         return `Basic ${btoa(`${username}:${appPassword}`)}`;
     }
 
-    throw new Error('Configure JMAP_USERNAME and JMAP_APP_PASSWORD');
+    throw new Error('Configure JMAP_API_TOKEN (or JMAP_USERNAME and JMAP_APP_PASSWORD)');
 };
 
 const getJmapSender = (env: Env) => {
@@ -44,12 +62,8 @@ const getJmapSender = (env: Env) => {
 };
 
 const getJmapSession = async (env: Env) => {
-    const sessionUrl = env.JMAP_SESSION_URL;
+    const sessionUrl = env.JMAP_SESSION_URL || FASTMAIL_SESSION_URL;
     const authorization = getJmapAuthorizationHeader(env);
-
-    if (!sessionUrl) {
-        throw new Error('JMAP_SESSION_URL is not configured');
-    }
 
     const response = await fetch(sessionUrl, {
         headers: {
@@ -59,7 +73,8 @@ const getJmapSession = async (env: Env) => {
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to fetch JMAP session: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch JMAP session: ${response.status} ${response.statusText} - ${errorText.slice(0, 300)}`);
     }
 
     const session = await response.json() as JmapSession;
@@ -108,7 +123,7 @@ const postJmapMethodCalls = async (apiUrl: string, authorization: string, method
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            using: [JMAP_CORE_CAP, JMAP_MAIL_CAP],
+            using: [JMAP_CORE_CAP, JMAP_MAIL_CAP, JMAP_SUBMISSION_CAP],
             methodCalls,
         }),
     });
@@ -262,6 +277,9 @@ export default {
       try {
         const body = (await request.json()) as { name: string; email: string; message: string };
         const { name, email, message } = body;
+        const safeName = escapeHtml(String(name ?? ''));
+        const safeEmail = escapeHtml(String(email ?? ''));
+        const safeMessage = escapeHtml(String(message ?? ''));
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email || !emailRegex.test(email)) {
@@ -302,19 +320,19 @@ export default {
                                 <tr>
                                     <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,122,0,0.3);">
                                         <span style="font-size: 10px; color: #FF7A00; text-transform: uppercase; letter-spacing: 0.1em;">[IDENTIFIER]</span><br>
-                                        <span style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${name}</span>
+                                        <span style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${safeName}</span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,122,0,0.3);">
                                         <span style="font-size: 10px; color: #FF7A00; text-transform: uppercase; letter-spacing: 0.1em;">[ENDPOINT]</span><br>
-                                        <a href="mailto:${email}" style="font-size: 16px; color: #ffffff; text-decoration: none; border-bottom: 1px solid #FF7A00;">${email}</a>
+                                        <a href="mailto:${safeEmail}" style="font-size: 16px; color: #ffffff; text-decoration: none; border-bottom: 1px solid #FF7A00;">${safeEmail}</a>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,122,0,0.3);">
                                         <span style="font-size: 10px; color: #FF7A00; text-transform: uppercase; letter-spacing: 0.1em;">[MESSAGE_PAYLOAD]</span><br>
-                                        <p style="font-size: 14px; line-height: 1.6; margin: 8px 0 0 0; white-space: pre-wrap;">${message}</p>
+                                        <p style="font-size: 14px; line-height: 1.6; margin: 8px 0 0 0; white-space: pre-wrap;">${safeMessage}</p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -324,7 +342,7 @@ export default {
                                     </td>
                                 </tr>
                             </table>
-                            <a href="mailto:${email}" style="display: block; margin-top: 30px; background-color: #FF7A00; color: #121212; text-decoration: none; padding: 15px; font-weight: bold; text-transform: uppercase; text-align: center; font-size: 18px; letter-spacing: 1px;">INITIATE_REPLY</a>
+                            <a href="mailto:${safeEmail}" style="display: block; margin-top: 30px; background-color: #FF7A00; color: #121212; text-decoration: none; padding: 15px; font-weight: bold; text-transform: uppercase; text-align: center; font-size: 18px; letter-spacing: 1px;">INITIATE_REPLY</a>
                         </td>
                     </tr>
                 </table>
@@ -371,7 +389,7 @@ Initiate Reply: ${email}
                         <td style="padding: 40px;">
                             <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: bold; color: #FF7A00; text-transform: uppercase;">TRANSMISSION_SUCCESS</h2>
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; opacity: 0.9;">
-                                Greeting ${name},<br><br>
+                                Greeting ${safeName},<br><br>
                                 Your data packet has been successfully received by the system. I will review the parameters and process a response within 24 standard cycles.
                             </p>
 
@@ -380,7 +398,7 @@ Initiate Reply: ${email}
                                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                                     <tr>
                                         <td style="padding: 5px 0; color: rgba(255,255,255,0.5); font-size: 12px; width: 100px;">ENDPOINT:</td>
-                                        <td style="padding: 5px 0; font-size: 12px; font-weight: bold;">${email}</td>
+                                        <td style="padding: 5px 0; font-size: 12px; font-weight: bold;">${safeEmail}</td>
                                     </tr>
                                     <tr>
                                         <td style="padding: 5px 0; color: rgba(255,255,255,0.5); font-size: 12px; width: 100px;">TIMESTAMP:</td>
@@ -423,7 +441,8 @@ PEPIJN_LATOUR
 END_OF_TRANSMISSION
 `;
 
-        const hasJmapConfig = Boolean(env.JMAP_SESSION_URL && env.JMAP_USERNAME && env.JMAP_APP_PASSWORD && env.JMAP_MAIL_FROM);
+        const hasJmapAuth = Boolean(env.JMAP_API_TOKEN || (env.JMAP_USERNAME && env.JMAP_APP_PASSWORD));
+        const hasJmapConfig = Boolean(hasJmapAuth && (env.JMAP_MAIL_FROM || env.FROM_EMAIL));
 
         if (!hasJmapConfig) {
           console.warn('JMAP environment variables missing. Simulation mode active.');
