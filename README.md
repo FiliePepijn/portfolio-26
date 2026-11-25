@@ -72,7 +72,7 @@ The project includes a custom script to generate dynamic OG images by taking a s
 ```bash
 bun run capture-og
 ```
-This will generate `public/og-image.png` using Chrome Remote Interface.
+This will generate `public/og-image.jpg` using Chrome Remote Interface.
 
 ## 🎨 Design Principles
 
