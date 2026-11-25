@@ -31,8 +31,8 @@ async function capture() {
         await Page.loadEventFired();
         
         // Wait for PCD and fonts
-        console.log('Waiting for content to settle (8 seconds)...');
-        await new Promise(resolve => setTimeout(resolve, 8000));
+        console.log('Waiting for content to settle (20 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 20000));
         
         const width = 1200;
         const height = 630;
@@ -42,13 +42,14 @@ async function capture() {
         await Emulation.setDeviceMetricsOverride({
             width: width,
             height: height,
-            deviceScaleFactor: 2, // High DPI for crispness
+            deviceScaleFactor: 1, // 1200x630 keeps the grain from bloating the file
             mobile: false
         });
         
         console.log('Capturing screenshot...');
         const {data} = await Page.captureScreenshot({
-            format: 'png',
+            format: 'jpeg',
+            quality: 90,
             clip: {
                 x: 0,
                 y: 0,
@@ -59,8 +60,8 @@ async function capture() {
             fromSurface: true
         });
         
-        fs.writeFileSync('public/og-image.png', Buffer.from(data, 'base64'));
-        console.log('OG Image saved to public/og-image.png');
+        fs.writeFileSync('public/og-image.jpg', Buffer.from(data, 'base64'));
+        console.log('OG Image saved to public/og-image.jpg');
         
     } catch (err) {
         console.error('Error during screenshot:', err);
