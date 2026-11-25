@@ -1,113 +1,38 @@
-import React from 'react';
-import PointCloudHead from './PointCloudHead';
+import StoryCanvas from '../gl/StoryCanvas'
 
-const OGPreview: React.FC = () => {
+/**
+ * The social share image, rendered at 1200x630 and captured to public/og-image.jpg
+ * (`bun run capture-og` with the dev server running). It uses the live particle scene,
+ * so the image matches the opening chapter of the site.
+ */
+export default function OGPreview() {
   return (
-    <div className="w-[1200px] h-[630px] bg-[#121212] text-white font-satoshi  relative  flex flex-col">
-      {/* NOISE / GRAIN OVERLAY */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-      
-      {/* GRID BACKGROUND */}
-      <div className="absolute inset-0 opacity-10 bg-grid-lines pointer-events-none" />
+    <div className="story relative h-[630px] w-[1200px] overflow-hidden font-satoshi text-white">
+      <StoryCanvas />
 
-      {/* TOP BAR: SYSTEM STATUS */}
-      <div className="h-[120px] border-b-2 border-[#FF7A00]/30 bg-[#121212] flex items-center justify-between px-6 z-10">
-        <div className="flex gap-3 items-center">
-          <div className="w-32 h-2.5 bg-[#FF7A00]/30 rounded-full" />
-          <div className="w-3.5 h-3.5 bg-[#FF7A00] rounded-full animate-pulse" />
-        </div>
-        <div className="flex gap-8">
-          <div className="w-20 h-2 bg-[#FF7A00]/20 rounded-full" />
-          <div className="w-16 h-2 bg-[#FF7A00]/20 rounded-full" />
-          <div className="w-12 h-2 bg-[#FF7A00]/20 rounded-full" />
-        </div>
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-14 pt-10 font-brutalist-mono text-[15px] uppercase tracking-[0.24em] text-[#FF7A00]">
+        <span>Latour, P. // 00 Signal</span>
+        <span className="border border-[#FF7A00] px-3 py-1.5">platour.net</span>
       </div>
 
-      {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex border-b-2 border-[#FF7A00]/30 z-10">
-        {/* LEFT COLUMN: IDENTITY */}
-        <div className="flex-1 p-8 flex flex-col gap-8 relative border-r-2 border-[#FF7A00]/30 bg-[#121212]/50">
-          <div className="">
-            <h1 className="font-clash font-bold tracking-tighter leading-none text-[#FF7A00] uppercase text-[160px]">
-              PEPIJN
-            </h1>
+      <div className="absolute left-14 top-[118px] z-10 w-[640px]">
+        <h1 className="font-clash text-[176px] font-bold uppercase leading-[0.85] text-[#FF7A00]">Pepijn</h1>
+        <p className="mt-5 inline-block -rotate-1 bg-[#FF7A00] whitespace-nowrap px-5 py-2 text-[30px] font-black uppercase text-[#121212] shadow-[5px_5px_0px_0px_white]">
+          UX/UI Designer &amp; Web-Developer
+        </p>
+        <p className="mt-8 border-l-4 border-[#FF7A00] pl-5 text-[28px] font-bold uppercase leading-[1.12] text-white/85">
+          Reducing noise in digital systems.<br />Designing for human intent.
+        </p>
+      </div>
+
+      <dl className="absolute bottom-10 left-14 z-10 flex gap-10 font-brutalist-mono text-[15px] uppercase">
+        {[['Subject_ID', 'Latour, P.'], ['Location', 'Helmond'], ['Status', 'Identified']].map(([k, v]) => (
+          <div key={k} className="flex gap-3">
+            <dt className="text-white/50">{k}</dt>
+            <dd className="text-[#FF7A00]">{v}</dd>
           </div>
-          
-          <div className="bg-[#FF7A00] text-[#121212] px-6 py-2 font-satoshi font-black tracking-tighter text-4xl uppercase transform -rotate-1 shadow-[6px_6px_0px_0px_white] w-fit">
-            UX/UI Designer & Developer
-          </div>
-          
-          <div className="w-3/4 h-[1px] bg-[#FF7A00]/30" />
-          
-          <p className="max-w-xl text-2xl font-bold uppercase opacity-80 leading-tight border-l-4 border-[#FF7A00] pl-8 font-satoshi">
-            REDUCING NOISE IN DIGITAL SYSTEMS. <br/>
-            DESIGNING FOR HUMAN INTENT.
-          </p>
-        </div>
-
-        {/* RIGHT COLUMN: SCAN & METADATA */}
-        <div className="w-[400px] flex flex-col bg-black/40">
-           {/* SCAN INTERFACE */}
-           <div className="h-[280px] border-b-2 border-[#FF7A00]/30 relative bg-black overflow-hidden">
-              <div className="absolute top-3 right-4 font-brutalist-mono text-[10px] text-[#FF7A00] z-20 bg-black/50 px-2 py-1 border border-[#FF7A00]/20 uppercase tracking-tighter">STATUS: IDENTIFIED</div>
-              <div className="absolute bottom-3 left-4 font-brutalist-mono text-[10px] text-[#FF7A00] z-20 bg-black/50 px-2 py-1 border border-[#FF7A00]/20 uppercase tracking-tighter">SCAN_RES: HIGH_DENSITY</div>
-              
-              <PointCloudHead 
-                isExternalTracking={false} 
-                trackingMode="default" 
-                isCaptureMode={true}
-              />
-           </div>
-
-           <div className="flex-1 p-4 flex flex-col justify-between">
-              <div className="space-y-4 font-brutalist-mono text-sm uppercase">
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="opacity-40">Subject_ID</span>
-                  <span className="text-[#FF7A00]">Latour, P.</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="opacity-40">Status</span>
-                  <span className="text-[#FF7A00]">IDENTIFIED</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="opacity-40">Data_State</span>
-                  <span className="text-[#FF7A00]">SYNCED</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="opacity-40">Origin</span>
-                  <span className="text-[#FF7A00]">Helmond_NL</span>
-                </div>
-              </div>
-
-              <div className="p-4 border-2 border-[#FF7A00]/20 bg-[#FF7A00]/5 rounded-sm">
-                <div className="font-brutalist-mono text-[10px] text-[#FF7A00] opacity-50 mb-2">SYSTEM_SIGNATURE</div>
-                <div className="h-10 flex items-end gap-1">
-                   {[40, 70, 45, 90, 65, 30, 85, 50, 75, 40].map((h, i) => (
-                     <div key={i} className="flex-1 bg-[#FF7A00]/40" style={{ height: `${h}%` }} />
-                   ))}
-                </div>
-              </div>
-           </div>
-        </div>
-      </div>
-
-      {/* BOTTOM BAR */}
-      <div className="h-9 bg-[#121212] flex items-center px-8 justify-between z-10">
-        <div className="font-brutalist-mono text-xs text-[#FF7A00] tracking-[0.3em] uppercase opacity-60">
-          WWW.PEPIJNLATOUR.COM // V1.0.0_STABLE
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
-          <span className="font-brutalist-mono text-[10px] text-[#FF7A00] uppercase tracking-widest">Connection_Secure</span>
-        </div>
-      </div>
-      
-      {/* SCANNER LINE EFFECT
-      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden opacity-20">
-        <div className="w-full h-[2px] bg-[#FF7A00] absolute top-1/4 left-0" />
-      </div> */}
+        ))}
+      </dl>
     </div>
-  );
-};
-
-export default OGPreview;
+  )
+}
