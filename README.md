@@ -49,8 +49,21 @@ bun run deploy:preview
 ```
 Previews don't inherit production secrets. Set them once for all new Previews:
 ```bash
-bunx wrangler preview base-config secret put JMAP_APP_PASSWORD
+bunx wrangler preview base-config secret put JMAP_API_TOKEN
 ```
+
+### Contact form mail (Fastmail JMAP)
+`src/worker.ts` sends the contact form mail through Fastmail's JMAP API. Set these on the Worker:
+
+| Name | Value |
+| --- | --- |
+| `JMAP_API_TOKEN` (secret) | Fastmail API token with Email + Email submission access |
+| `JMAP_MAIL_FROM` | Sender address; must be one of your Fastmail sending identities |
+| `JMAP_MAIL_FROM_NAME` | Optional sender name (default `Pepijn Latour`) |
+| `CONTACT_EMAIL` | Where new messages are delivered |
+| `JMAP_SESSION_URL` | Optional; defaults to `https://api.fastmail.com/jmap/session` |
+
+`JMAP_USERNAME` / `JMAP_APP_PASSWORD` (Basic auth) still work for other JMAP servers when no token is set.
 
 ## 📂 Project Structure
 
