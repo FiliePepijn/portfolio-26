@@ -26,7 +26,7 @@ const HEADLINE = 'font-clash font-bold uppercase leading-[0.95]'
 
 function ProjectCard({ project, label }: { project: Project; label: string }) {
   return (
-    <article className="border-2 border-[#FF7A00] bg-[#121212]/80 p-5 shadow-[10px_10px_0px_0px_rgba(255,122,0,0.15)] backdrop-blur-sm md:p-8">
+    <article className="border-2 border-[#FF7A00] bg-[#121212]/90 p-5 shadow-[10px_10px_0px_0px_rgba(255,122,0,0.15)] md:p-8">
       <Label>{label}</Label>
       <h2 className={`${HEADLINE} text-[clamp(2rem,4.2vw,4.25rem)]`}>{project.title}</h2>
       {project.status && (
