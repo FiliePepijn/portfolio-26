@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import ContactForm from './components/ContactForm'
 import StoryCanvas from './gl/StoryCanvas'
 import { CHAPTERS } from './story/chapters'
-import { OWN_APPS, PROJECTS, SOCIALS, type Project } from './story/content'
+import { OWN_APPS, PROJECTS, SKILLS, SOCIALS, type Project } from './story/content'
 import { useChapterScroll } from './story/useChapterScroll'
 
 // Only used to capture the social image; keeps its React Three Fiber code out of the page bundle.
@@ -105,11 +105,24 @@ function App() {
         <Chapter id="clarity">
           <Label>02 // Find the structure</Label>
           <h2 className={`${HEADLINE} text-[clamp(2.25rem,4.4vw,4.75rem)]`}>Complexity in.<br /><span className="text-[#FF7A00]">Clarity out.</span></h2>
-          <ol className="mt-8 max-w-sm border-t border-white/15 font-brutalist-mono text-xs uppercase">
+          <ol className="mt-4 max-w-md md:mt-8 border-t border-white/15 font-brutalist-mono text-xs uppercase">
             {[['Input', 'Complexity'], ['Process', 'Question / Edit / Build'], ['Output', 'Clarity']].map(([k, v]) => (
-              <li key={k} className="flex justify-between gap-6 border-b border-white/15 py-3"><span className="text-white/45">{k}</span><span className="text-[#FF7A00]">{v}</span></li>
+              <li key={k} className="flex justify-between gap-6 border-b border-white/15 py-1.5 md:py-3"><span className="text-white/45">{k}</span><span className="text-[#FF7A00]">{v}</span></li>
             ))}
           </ol>
+          <h3 className="mt-4 md:mt-6 font-brutalist-mono text-[10px] uppercase tracking-[0.2em] text-white/60 md:text-[11px]">Toolkit</h3>
+          <dl className="mt-2 max-w-md space-y-1.5 md:mt-3 md:space-y-2.5 font-brutalist-mono text-[10px] uppercase">
+            {SKILLS.map(([group, items]) => (
+              <div key={group} className="grid grid-cols-[5.5rem_1fr] items-start gap-3">
+                <dt className="py-0.5 text-white/45 md:py-1">{group}</dt>
+                <dd>
+                  <ul className="flex flex-wrap gap-1 md:gap-1.5">
+                    {items.map((item) => <li key={item} className="border border-[#FF7A00]/50 bg-[#121212]/70 px-1.5 py-0.5 text-[#FF7A00] md:px-2 md:py-1">{item}</li>)}
+                  </ul>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </Chapter>
 
         {PROJECTS.map((project, i) => (

@@ -100,6 +100,14 @@ export const OWN_APPS: Project[] = [
   },
 ]
 
+/** Shown in the Clarity chapter. */
+export const SKILLS: [group: string, items: string[]][] = [
+  ['Frontend', ['Next.js', 'React', 'Vue', 'TypeScript', 'Tailwind CSS']],
+  ['3D / Motion', ['Three.js', 'WebGPU', 'TSL', 'GSAP']],
+  ['Backend', ['PostgreSQL', 'Prisma', 'Cloudflare Workers', 'D1']],
+  ['Mobile', ['Expo', 'Flutter']],
+]
+
 export const SOCIALS = [
   { name: 'GitHub', url: 'https://github.com/FiliePepijn' },
   { name: 'LinkedIn', url: 'https://www.linkedin.com/in/pepijn-latour-a70055276/' },
