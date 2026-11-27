@@ -76,34 +76,52 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
   resizeObserver.observe(host)
   resize()
 
+  /** The display's refresh interval: the shortest gap seen between two animation frames. */
+  let refresh = Infinity
+  /** Minimum time between rendered frames. 0 renders on every refresh; 1/60 locks a fast display to 60 fps. */
+  let frameBudget = 0
+
   /**
-   * Drops the render resolution in small steps when frames keep arriving late. A GPU that
-   * almost keeps up is the worst case: frames alternate between one and two refresh intervals,
-   * which reads as judder even at a decent average fps. Stops at a pixel ratio of 1, only ever steps down, and only after
-   * two slow seconds in a row, so a one-off hitch (a tab switch, a long task) never triggers it.
+   * Keeps frame pacing even when the GPU can't keep up. A GPU that almost keeps up is the worst
+   * case: frames alternate between one and two refresh intervals, which reads as jitter even at a
+   * decent average fps. This is common on 120 Hz screens (MacBook ProMotion), which also have
+   * the most pixels. The fix, in order:
+   *   1. On a display faster than ~80 Hz, lock rendering to a steady 60 fps.
+   *   2. Then lower the pixel ratio in steps, from 1.5 down to 1.
+   * Each step needs two jittery seconds in a row, so a one-off hitch (a tab switch, a long task)
+   * never triggers it, and it never steps back up.
    */
   const governor = (() => {
-    let refresh = Infinity // the fastest frame seen, which is the display's refresh interval
     let sampleTime = 0
     let sampleFrames = 0
+    let missed = 0
     let slowSeconds = 0
     return (delta: number) => {
       if (!(delta > 0) || delta > 0.25) return // first frame, or back from a hidden tab
-      refresh = Math.min(refresh, Math.max(delta, 1 / 240))
+      const target = Math.max(refresh, frameBudget)
+      if (delta > target * 1.5) missed++
       sampleTime += delta
       sampleFrames++
       if (sampleTime < 1) return
       const average = sampleTime / sampleFrames
+      const missedShare = missed / sampleFrames
       sampleTime = 0
       sampleFrames = 0
-      // Late against the display's own rate, or simply under 50 fps when every frame is slow alike.
-      const slow = average > refresh * 1.3 || average > 1 / 50
+      missed = 0
+      // More than 1 in 10 frames shown late, or simply under 50 fps when every frame is slow alike.
+      const slow = missedShare > 0.1 || average > 1 / 50
       slowSeconds = slow ? slowSeconds + 1 : 0
-      if (slowSeconds < 2 || pixelRatio <= 1) return
+      if (slowSeconds < 2) return
       slowSeconds = 0
-      pixelRatio = Math.max(1, pixelRatio - 0.25)
-      console.info(`[story] frames late (${(1 / average).toFixed(0)} fps), pixel ratio now ${pixelRatio}`)
-      resize()
+      const fps = (1 / average).toFixed(0)
+      if (!frameBudget && refresh < 1 / 80) {
+        frameBudget = 1 / 60
+        console.info(`[story] uneven frames (${fps} fps, ${(missedShare * 100).toFixed(0)}% late), locking to 60 fps`)
+      } else if (pixelRatio > 1) {
+        pixelRatio = Math.max(1, pixelRatio - 0.25)
+        console.info(`[story] uneven frames (${fps} fps, ${(missedShare * 100).toFixed(0)}% late), pixel ratio now ${pixelRatio}`)
+        resize()
+      }
     }
   })()
 
@@ -203,9 +221,17 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     }
   }
 
+  let pending = 0
   renderer.setAnimationLoop((timestamp) => {
     timer.update(timestamp)
-    const delta = timer.getDelta()
+    const step = timer.getDelta()
+    if (step > 0 && step < 0.25) refresh = Math.min(refresh, Math.max(step, 1 / 240))
+    pending += step
+    // When locked to 60 fps, skip refreshes until the next frame is due. Half a refresh of slack
+    // absorbs timestamp jitter, so a 120 Hz screen renders exactly every second refresh.
+    if (pending < frameBudget - refresh / 2) return
+    const delta = pending
+    pending = 0
     // Skip the first seconds after load: the fade-in and late pipeline setup are not steady state.
     if (live && timer.getElapsed() - liveAt > 2) governor(delta)
     frame(Math.min(delta, 1 / 30), timer.getElapsed(), scroll.position())
