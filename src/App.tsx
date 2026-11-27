@@ -135,7 +135,7 @@ function App() {
         </section>
 
         <footer id="latour" className="chapter chapter--footer text-[#FF7A00]">
-          <h2 className="sr-only">Latour</h2>
+          <h2 className="sr-only">Pepijn Latour</h2>
           <div className="mx-auto flex w-full max-w-[1400px] flex-col justify-between gap-8 px-6 pb-10 md:flex-row md:items-end">
             <ul className="flex flex-wrap gap-6 font-brutalist-mono text-xs uppercase">
               {SOCIALS.map((s) => (

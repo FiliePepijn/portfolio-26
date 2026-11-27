@@ -330,16 +330,17 @@ function waveShape(count: number) {
 
 async function nameShape(count: number): Promise<Shape> {
   const font = '700 300px "Clash Display"'
-  await document.fonts.load(font, 'LATOUR').catch(() => [])
+  await document.fonts.load(font, 'PEPIJN LATOUR').catch(() => [])
   const canvas = document.createElement('canvas')
   canvas.width = 1400
-  canvas.height = 380
+  canvas.height = 700
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   ctx.font = font
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#fff'
-  ctx.fillText('LATOUR', canvas.width / 2, canvas.height / 2, canvas.width - 20)
+  ctx.fillText('PEPIJN', canvas.width / 2, 205, canvas.width - 20)
+  ctx.fillText('LATOUR', canvas.width / 2, 495, canvas.width - 20)
   const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const filled: number[] = []
   for (let i = 3; i < data.length; i += 4) if (data[i] > 128) filled.push((i - 3) / 4)
