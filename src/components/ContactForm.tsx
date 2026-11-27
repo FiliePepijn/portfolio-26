@@ -46,7 +46,7 @@ export default function ContactForm() {
 
   return (
     <section className="py-[8vh] md:py-[10vh] px-4 md:px-6 max-w-[1400px] mx-auto">
-      <div className="@container border-4 border-[#FF7A00] bg-[#121212]/85 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden">
+      <div className="@container border-4 border-[#FF7A00] bg-[#121212]/92 p-6 md:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-0 bg-[#FF7A00] text-[#121212] px-3 py-0.5 font-brutalist-mono text-[10px] md:text-xs uppercase">
           SYSTEM_TRANSMISSION // INITIALIZE
         </div>
