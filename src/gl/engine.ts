@@ -53,19 +53,59 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
 
   const post = createPost(renderer, scene, camera)
 
+  // The host size is cached here so the frame loop never reads layout. Reading clientWidth
+  // right after GSAP has written styles forces a synchronous style recalc every frame.
+  let width = host.clientWidth
+  let height = host.clientHeight
+  // Starts at the sharpest ratio we allow and steps down if the GPU can't keep up (see `governor`).
+  let pixelRatio = Math.min(window.devicePixelRatio, 1.5)
   const resize = () => {
-    const { clientWidth: w, clientHeight: h } = host
-    if (!w || !h) return
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    renderer.setSize(w, h, false)
-    camera.aspect = w / Math.max(1, h)
+    if (!width || !height) return
+    renderer.setPixelRatio(pixelRatio)
+    renderer.setSize(width, height, false)
+    camera.aspect = width / Math.max(1, height)
     camera.updateProjectionMatrix()
   }
   renderer.domElement.style.cssText = 'width:100%;height:100%;display:block'
   host.appendChild(renderer.domElement)
-  const resizeObserver = new ResizeObserver(resize)
+  const resizeObserver = new ResizeObserver(([entry]) => {
+    width = Math.round(entry.contentRect.width)
+    height = Math.round(entry.contentRect.height)
+    resize()
+  })
   resizeObserver.observe(host)
   resize()
+
+  /**
+   * Drops the render resolution in small steps when frames keep arriving late. A GPU that
+   * almost keeps up is the worst case: frames alternate between one and two refresh intervals,
+   * which reads as judder even at a decent average fps. Stops at a pixel ratio of 1, only ever steps down, and only after
+   * two slow seconds in a row, so a one-off hitch (a tab switch, a long task) never triggers it.
+   */
+  const governor = (() => {
+    let refresh = Infinity // the fastest frame seen, which is the display's refresh interval
+    let sampleTime = 0
+    let sampleFrames = 0
+    let slowSeconds = 0
+    return (delta: number) => {
+      if (!(delta > 0) || delta > 0.25) return // first frame, or back from a hidden tab
+      refresh = Math.min(refresh, Math.max(delta, 1 / 240))
+      sampleTime += delta
+      sampleFrames++
+      if (sampleTime < 1) return
+      const average = sampleTime / sampleFrames
+      sampleTime = 0
+      sampleFrames = 0
+      // Late against the display's own rate, or simply under 50 fps when every frame is slow alike.
+      const slow = average > refresh * 1.3 || average > 1 / 50
+      slowSeconds = slow ? slowSeconds + 1 : 0
+      if (slowSeconds < 2 || pixelRatio <= 1) return
+      slowSeconds = 0
+      pixelRatio = Math.max(1, pixelRatio - 0.25)
+      console.info(`[story] frames late (${(1 / average).toFixed(0)} fps), pixel ratio now ${pixelRatio}`)
+      resize()
+    }
+  })()
 
   const pointer = new THREE.Vector2(9, 9)
   const onPointer = (e: PointerEvent) => {
@@ -102,12 +142,15 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
   await nextFrame()
   if (signal.aborted) return renderer.dispose()
 
+  let live = false
+  let liveAt = 0
+
   const frame = (delta: number, elapsed: number, position: number) => {
     const still = forceStill || reduced.matches
     const time = still ? 0 : elapsed
 
     // A hidden or collapsed pane reports no size; WebGPU cannot allocate empty targets.
-    if (!host.clientWidth || !host.clientHeight) return
+    if (!width || !height) return
     const previous = chapter
     chapter = position
     speed = damp(speed, Math.abs(chapter - previous) / Math.max(delta, 1e-4), 5, delta)
@@ -152,7 +195,9 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
 
     renderer.compute(particles.updates[i])
     post.pipeline.render()
-    if (!host.classList.contains('is-live')) {
+    if (!live) {
+      live = true
+      liveAt = elapsed
       host.classList.add('is-live')
       onProgress(1, 'Ready')
     }
@@ -160,7 +205,10 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
 
   renderer.setAnimationLoop((timestamp) => {
     timer.update(timestamp)
-    frame(Math.min(timer.getDelta(), 1 / 30), timer.getElapsed(), scroll.position())
+    const delta = timer.getDelta()
+    // Skip the first seconds after load: the fade-in and late pipeline setup are not steady state.
+    if (live && timer.getElapsed() - liveAt > 2) governor(delta)
+    frame(Math.min(delta, 1 / 30), timer.getElapsed(), scroll.position())
   })
 
   if (import.meta.env.DEV) {
