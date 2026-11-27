@@ -4,16 +4,7 @@ An interactive portfolio about finding clarity in digital systems. The page move
 
 [![Pepijn Latour portfolio social preview](public/og-image.jpg)](https://platour.net)
 
-The site's particle typography also inspired this LinkedIn cover:
 
-![PEPIJN LATOUR in orange 3D particles](linkedin-banner-particle-name-3d.png)
-
-## Selected work
-
-| Superlocal Crawlers | SiteSculpt | BeatBox Soundlab |
-| :---: | :---: | :---: |
-| <img src="public/images/SuperlocalCrawlers.svg" alt="Superlocal Crawlers artwork" width="180"> | <img src="public/images/SiteSculpt.png" alt="SiteSculpt mark" width="180"> | <img src="public/images/BeatBox.svg" alt="BeatBox Soundlab logo" width="180"> |
-| Interactive installation at Dutch Design Week | Custom websites and UX | Sound studio identity |
 
 ## Stack
 
