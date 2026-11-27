@@ -221,6 +221,26 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     }
   }
 
+  // `?fps` shows a small readout in the bottom-left corner: rendered fps, display refresh,
+  // pixel ratio, and whether the 60 fps lock is on. Off for normal visitors.
+  const meter = params.has('fps') ? document.createElement('div') : null
+  let meterFrames = 0
+  let meterTime = 0
+  if (meter) {
+    meter.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:60;padding:4px 8px;background:rgba(18,18,18,.85);border:1px solid #ff7a00;color:#ff7a00;font:11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.05em;pointer-events:none;white-space:pre'
+    document.body.appendChild(meter)
+  }
+  const updateMeter = (delta: number) => {
+    if (!meter) return
+    meterFrames++
+    meterTime += delta
+    if (meterTime < 0.5) return
+    const hz = Number.isFinite(refresh) ? Math.round(1 / refresh) : 0
+    meter.textContent = `${Math.round(meterFrames / meterTime)} FPS  ·  ${hz} Hz  ·  ${pixelRatio}x${frameBudget ? '  ·  locked 60' : ''}`
+    meterFrames = 0
+    meterTime = 0
+  }
+
   let pending = 0
   renderer.setAnimationLoop((timestamp) => {
     timer.update(timestamp)
@@ -234,6 +254,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     pending = 0
     // Skip the first seconds after load: the fade-in and late pipeline setup are not steady state.
     if (live && timer.getElapsed() - liveAt > 2) governor(delta)
+    if (delta > 0 && delta < 0.25) updateMeter(delta)
     frame(Math.min(delta, 1 / 30), timer.getElapsed(), scroll.position())
   })
 
@@ -263,6 +284,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     window.removeEventListener('pointerup', onLeave)
     document.documentElement.removeEventListener('pointerleave', onLeave)
     renderer.domElement.remove()
+    meter?.remove()
     renderer.dispose()
   }, { once: true })
 }
