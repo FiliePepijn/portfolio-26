@@ -1,98 +1,59 @@
-# Pepijn's Portfolio 2026
+# Pepijn Latour — Portfolio
 
-A high-performance, visually-driven personal portfolio built with React 19, Three.js, and Tailwind CSS 4, deployed as a Cloudflare Worker with integrated assets.
+An interactive portfolio about finding clarity in digital systems. The page moves through a 3D particle story, selected design and development work, and a contact form. Visit it at [platour.net](https://platour.net).
 
-**Live at:** [platour.net](https://platour.net)
+[![Pepijn Latour portfolio social preview](public/og-image.jpg)](https://platour.net)
 
-## 🚀 Tech Stack
+The site's particle typography also inspired this LinkedIn cover:
 
-- **Runtime & PM:** [Bun](https://bun.sh/) (Fastest package manager and runner)
-- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool:** [Vite 8](https://vitejs.dev/)
-- **Styling:** [Tailwind CSS 4.3.0](https://tailwindcss.com/) (using the new Vite plugin architecture)
-- **3D Graphics:** [Three.js](https://threejs.org/) with [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) & [Drei](https://github.com/pmndrs/drei)
-- **Animation:** [GSAP](https://gsap.com/) & [Framer Motion](https://www.framer.com/motion/)
-- **Deployment:** [Cloudflare Workers](https://workers.cloudflare.com/) (using the new "Workers with Assets" platform)
+![PEPIJN LATOUR in orange 3D particles](linkedin-banner-particle-name-3d.png)
 
-## 🛠️ Getting Started
+## Selected work
 
-### Prerequisites
-Make sure you have [Bun](https://bun.sh/) installed.
+| Superlocal Crawlers | SiteSculpt | BeatBox Soundlab |
+| :---: | :---: | :---: |
+| <img src="public/images/SuperlocalCrawlers.svg" alt="Superlocal Crawlers artwork" width="180"> | <img src="public/images/SiteSculpt.png" alt="SiteSculpt mark" width="180"> | <img src="public/images/BeatBox.svg" alt="BeatBox Soundlab logo" width="180"> |
+| Interactive installation at Dutch Design Week | Custom websites and UX | Sound studio identity |
 
-### Installation
+## Stack
+
+- React 19, TypeScript, Tailwind CSS 4, and Vite 8
+- Three.js WebGPU particles with a WebGL fallback; the portrait uses `public/PepijnPCD.pcd`
+- GSAP for scroll and chapter timing
+- Cloudflare Workers with static assets; the contact form sends mail through Fastmail JMAP
+
+## Run locally
+
+Install [Bun](https://bun.sh/), then:
+
 ```bash
-bun install
-```
-
-### Development
-Starts the Vite dev server.
-```bash
+bun install --frozen-lockfile
 bun dev
 ```
 
-### Build
-Compiles both the Client assets and the Worker script.
-```bash
-bun run build
-```
+`bun run build` typechecks and builds the client and Worker. `bun run lint` runs ESLint.
 
-### Deployment
-Deploys the production build to Cloudflare.
-```bash
-bun run deploy
-```
+## Deploy
 
-### Preview (dev) deployment
-Deploys the current git branch as an isolated [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `<branch>-portfolio-26.<subdomain>.workers.dev`, without touching production.
-```bash
-bun run deploy:preview
-```
-Previews don't inherit production secrets. Set them once for all new Previews:
-```bash
-bunx wrangler preview base-config secret put JMAP_API_TOKEN
-```
+`bun run deploy` builds and deploys the production Worker to `platour.net`. `bun run deploy:preview` creates an isolated Worker Preview for the current branch. Preview deployments need their own secrets.
 
-### Contact form mail (Fastmail JMAP)
-`src/worker.ts` sends the contact form mail through Fastmail's JMAP API. Set these on the Worker:
+The Worker uses these environment values for contact mail:
 
-| Name | Value |
+| Name | Purpose |
 | --- | --- |
-| `JMAP_API_TOKEN` (secret) | Fastmail API token with Email + Email submission access |
-| `JMAP_MAIL_FROM` | Sender address; must be one of your Fastmail sending identities |
-| `JMAP_MAIL_FROM_NAME` | Optional sender name (default `Pepijn Latour`) |
-| `CONTACT_EMAIL` | Where new messages are delivered |
-| `JMAP_SESSION_URL` | Optional; defaults to `https://api.fastmail.com/jmap/session` |
+| `JMAP_API_TOKEN` | Fastmail token with Email and Email submission access |
+| `JMAP_MAIL_FROM` | Sender address configured as a Fastmail identity |
+| `CONTACT_EMAIL` | Recipient for contact submissions |
+| `JMAP_MAIL_FROM_NAME` | Optional sender name; defaults to Pepijn Latour |
+| `JMAP_SESSION_URL` | Optional JMAP session endpoint |
 
-`JMAP_USERNAME` / `JMAP_APP_PASSWORD` (Basic auth) still work for other JMAP servers when no token is set.
+## Project layout
 
-## 📂 Project Structure
+- `src/gl/` — particle shapes, renderer, and postprocessing
+- `src/story/` — chapter content and scroll state
+- `src/components/` — contact form and social image preview
+- `src/worker.ts` — Cloudflare Worker and contact endpoint
+- `public/images/` — artwork used by the particle shapes
+- `public/fonts/` — local variable webfonts and license files
 
-- `src/main.tsx`: Client-side entry point.
-- `src/worker.ts`: Cloudflare Worker entry point handling routing and SSR/Asset serving.
-- `src/components/`:
-    - `PointCloudHead.tsx`: Interactive 3D point cloud using Three.js.
-    - `SplitText.tsx`: Animated text components using GSAP.
-    - `Projects.tsx`: Portfolio projects showcase with Embla Carousel.
-- `public/fonts/`: Localized high-quality typography (Clash Display, Satoshi).
-- `screenshot.js`: Custom automation script for capturing OpenGraph images.
-
-## 🖼️ OG Image Generation
-
-The project includes a custom script to generate dynamic OG images by taking a screenshot of a specific preview route.
-
-1. Start the dev server: `bun dev`
-2. Run the capture script:
-```bash
-bun run capture-og
-```
-This will generate `public/og-image.jpg` using Chrome Remote Interface.
-
-## 🎨 Design Principles
-
-- **Fluid Typography:** Uses CSS `clamp()` and variables defined in `index.css` for seamless scaling across devices.
-- **Brutalist Aesthetics:** Combines sharp typography (JetBrains Mono) with grainy textures and grid-based layouts.
-- **Performance:** Leverages Bun for ultra-fast builds and Cloudflare's edge network for global delivery.
-
----
-
-Built with ❤️ by Pepijn.
+To refresh `public/og-image.jpg`, run the dev server, open a Chromium browser with remote debugging on port `9222`, then run `bun run capture-og`.
