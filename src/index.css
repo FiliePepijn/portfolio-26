@@ -118,6 +118,7 @@
 html { scroll-behavior: smooth; background: #121212; }
 
 .story-canvas {
+  /* The dots stay behind the text while every chapter scrolls over them. */
   position: fixed;
   inset: 0;
   height: 100lvh;
@@ -137,6 +138,7 @@ html { scroll-behavior: smooth; background: #121212; }
 .chapter:first-of-type { min-height: 135svh; }
 
 .chapter__stage {
+  /* Keep a chapter's words on screen while its tall section passes by. */
   position: sticky;
   top: 0;
   height: 100svh;

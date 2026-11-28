@@ -12,6 +12,7 @@ export function createScrollStory(still: boolean) {
   const gaps = CHAPTERS.slice(1).map(() => ({ value: 0 }))
   const context = gsap.context(() => {
     gaps.forEach((gap, i) => {
+      // GSAP turns the scroll between two sections into a number from 0 to 1.
       gsap.to(gap, {
         value: 1,
         ease: 'none',
@@ -35,6 +36,7 @@ export function createScrollStory(still: boolean) {
   observer.observe(document.body)
 
   return {
+    // Add the finished gaps to find which pair of sections we are between.
     position: () => gaps.reduce((sum, gap) => sum + gap.value, 0),
     dispose() {
       window.clearTimeout(pending)

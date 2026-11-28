@@ -16,6 +16,7 @@ export default function ContactForm() {
     setErrorMessage('')
 
     try {
+      // Send the form to our Worker; it handles validation and the two emails.
       const response = await fetch('/api/send', {
         method: 'POST',
         headers: {
@@ -27,6 +28,7 @@ export default function ContactForm() {
       const result = await response.json()
 
       if (response.ok && result.success) {
+        // Clear the fields only after the server reports success.
         setStatus('success')
         setFormData({ name: '', email: '', message: '' })
       } else {

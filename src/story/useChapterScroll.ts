@@ -12,6 +12,7 @@ export function useChapterScroll(enabled = true) {
 
   useGSAP(() => {
     if (!enabled) return
+    // Watch which section crosses the screen's middle so navigation can highlight it.
     CHAPTERS.forEach(({ id }) => {
       ScrollTrigger.create({
         trigger: `#${id}`,
@@ -21,6 +22,7 @@ export function useChapterScroll(enabled = true) {
       })
     })
 
+    // Text enters separately from the particle animation, and stays still when motion is reduced.
     gsap.matchMedia().add('(prefers-reduced-motion: no-preference)', () => {
       gsap.utils.toArray<HTMLElement>('.chapter__copy').forEach((copy) => {
         gsap.from(copy.children, {

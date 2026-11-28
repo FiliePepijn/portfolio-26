@@ -28,6 +28,7 @@ const JMAP_MAIL_CAP = 'urn:ietf:params:jmap:mail';
 const JMAP_SUBMISSION_CAP = 'urn:ietf:params:jmap:submission';
 const FASTMAIL_SESSION_URL = 'https://api.fastmail.com/jmap/session';
 
+// Form values appear inside email HTML, so turn special characters into safe text.
 const escapeHtml = (value: string) => value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -77,6 +78,7 @@ const getJmapSession = async (env: Env) => {
         throw new Error(`Failed to fetch JMAP session: ${response.status} ${response.statusText} - ${errorText.slice(0, 300)}`);
     }
 
+    // The session tells us which mailbox account and API URL to use for sending.
     const session = await response.json() as JmapSession;
     const accountId = session.primaryAccounts[JMAP_MAIL_CAP];
 
@@ -213,6 +215,7 @@ const sendEmailViaJmap = async (env: Env, {
 
     const multipartBody = createMultipartAlternativeBody(text, html);
 
+    // JMAP sends in two steps: create a draft, then submit that draft for delivery.
     const createResponse = await postJmapMethodCalls(apiUrl, authorization, [[
         'Email/set',
         {
@@ -272,7 +275,7 @@ export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
 
-    // Handle the contact form submission
+    // The form's /api/send request lands here; other requests reach preflight or static assets below.
     if (url.pathname === '/api/send' && request.method === 'POST') {
       try {
         const body = (await request.json()) as { name: string; email: string; message: string };
@@ -441,6 +444,7 @@ PEPIJN_LATOUR
 END_OF_TRANSMISSION
 `;
 
+        // With no mail credentials, report simulated success without sending email.
         const hasJmapAuth = Boolean(env.JMAP_API_TOKEN || (env.JMAP_USERNAME && env.JMAP_APP_PASSWORD));
         const hasJmapConfig = Boolean(hasJmapAuth && (env.JMAP_MAIL_FROM || env.FROM_EMAIL));
 

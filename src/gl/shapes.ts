@@ -1,12 +1,12 @@
 import * as THREE from 'three/webgpu'
 import type { ShapeName } from '../story/chapters'
 
-/** Files under public/models and public/images, listed at build time (see vite.config.ts). */
+/** Files under public/images, listed at build time (see vite.config.ts). */
 declare const __PUBLIC_FILES__: string[]
 const PUBLIC_FILES = __PUBLIC_FILES__
 
-/** Every shape is `count` points as xyzw, where w is the point's brightness weight (0..1). */
-export type Shape = Float32Array
+/** Every shape is `count` xyzw points; some also carry an RGBA colour for each point. */
+export type Shape = Float32Array & { colors?: Float32Array }
 
 /** Small seeded generator so the cloud looks the same on every visit. */
 export function mulberry(seed: number) {
@@ -20,6 +20,7 @@ export function mulberry(seed: number) {
 
 export function build(count: number, fill: (i: number, rnd: () => number, out: THREE.Vector4) => void, seed = 7): Shape {
   const rnd = mulberry(seed)
+  // Pack each dot's x, y, z and brightness into four numbers for the GPU.
   const data = new Float32Array(count * 4)
   const v = new THREE.Vector4()
   for (let i = 0, o = 0; i < count; i++, o += 4) {
@@ -85,6 +86,7 @@ export async function loadPCD(url: string) {
 
 async function headShape(count: number): Promise<Shape> {
   const geometry = new THREE.BufferGeometry()
+  // The head is a real point scan. Centre and resize it before assigning dot homes.
   geometry.setAttribute('position', new THREE.BufferAttribute(await loadPCD('/PepijnPCD.pcd'), 3))
   geometry.center()
   geometry.computeBoundingBox()
@@ -135,6 +137,7 @@ async function artworkShape(
   canvas.width = w
   canvas.height = h
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+  // Draw the PNG or SVG on a hidden canvas so we can read its pixels.
   ctx.drawImage(image, 0, 0, w, h)
   const { data } = ctx.getImageData(0, 0, w, h)
   const solid = (x: number, y: number) => {
@@ -162,6 +165,7 @@ async function artworkShape(
   return build(count, (_i, rnd, out) => {
     const kind = rnd()
     const list = kind < 0.42 ? edge : face
+    // Pick a visible pixel as this dot's home in the logo or image.
     const pixel = list[Math.floor(rnd() * list.length)]
     const x = ((pixel % w) + rnd() - 0.5 - centre.x) * unit
     const y = (centre.y - Math.floor(pixel / w) + rnd() - 0.5) * unit
@@ -241,6 +245,7 @@ async function superlocalShape(count: number): Promise<Shape> {
   const original = PUBLIC_FILES.includes('images/superlocal-logo.png')
     ? await loadImage('/images/superlocal-logo.png').catch(() => null)
     : null
+  // Use the supplied logo when available; otherwise draw the same mark in code.
   if (original) {
     const fitted = Math.min(canvas.width / original.naturalWidth, canvas.height / original.naturalHeight)
     ctx.drawImage(original, 0, 0, original.naturalWidth * fitted, original.naturalHeight * fitted)
@@ -291,6 +296,7 @@ async function superlocalShape(count: number): Promise<Shape> {
 // ---------------------------------------------------------------- procedural
 
 function noiseShape(count: number) {
+  // This chapter deliberately gives dots scattered homes instead of a logo outline.
   return build(count, (_i, rnd, out) => {
     const u = rnd() * 2 - 1
     const a = rnd() * Math.PI * 2
@@ -300,21 +306,76 @@ function noiseShape(count: number) {
   }, 23)
 }
 
-/** Points along the edges of a regular 3D grid: clean lines instead of a solid block. */
-function latticeShape(count: number) {
-  const cells = 5
-  const size = 1.8
-  const at = (i: number) => (i / cells - 0.5) * size
-  return build(count, (_i, rnd, out) => {
-    const axis = Math.floor(rnd() * 3)
-    const a = at(Math.floor(rnd() * (cells + 1)))
-    const b = at(Math.floor(rnd() * (cells + 1)))
-    const node = rnd() < 0.12
-    const t = node ? at(Math.floor(rnd() * (cells + 1))) : (rnd() - 0.5) * size
-    const j = () => (rnd() - 0.5) * (node ? 0.035 : 0.004)
-    const p = axis === 0 ? [t, a, b] : axis === 1 ? [a, t, b] : [a, b, t]
-    out.set(p[0] + j(), p[1] + j(), p[2] + j(), node ? 0.9 : 0.2)
+/** Expertise logos scattered in fixed, irregular spots with their SVG colours. */
+async function expertiseShape(count: number): Promise<Shape> {
+  const size = 256
+  const fit = 224
+  const logos = [
+    { url: '/images/ExpertiseCloudflare.svg', ratio: 1 },
+    { url: '/images/ExpertiseFlutter.svg', ratio: 1, paleBackground: true },
+    { url: '/images/ExpertiseVite.svg', ratio: 23 / 14 },
+    { url: '/images/ExpertiseVue.svg', ratio: 261.76 / 226.69 },
+    { url: '/images/ExpertiseNext.svg', ratio: 1 },
+    { url: '/images/ExpertiseReact.svg', ratio: 1 },
+    { url: '/images/ExpertiseTailwind.svg', ratio: 1 },
+    { url: '/images/ExpertiseFigma.svg', ratio: 1 },
+    { url: '/images/ExpertiseAdobe.svg', ratio: 1 },
+    { url: '/images/ExpertiseBlender.svg', ratio: 1 },
+    { url: '/images/ExpertiseClaude.svg', ratio: 1 },
+    { url: '/images/ExpertiseBun.svg', ratio: 1 },
+  ]
+  // These were picked with a fixed random seed and spaced apart so the logos do not overlap.
+  const homes = [
+    [-0.272, 0.302], [-0.918, -0.636], [-0.896, 0.395], [0.412, -0.596],
+    [0.091, -0.086], [-0.222, 0.814], [1.117, -0.159], [-0.367, -0.486],
+    [0.373, 0.551], [-0.968, -0.123], [1.018, 0.536], [0.591, 0.005],
+  ] as const
+  const masks = await Promise.all(logos.map(async ({ url, ratio, paleBackground }) => {
+    const image = await loadImage(url)
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = size
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+    const width = ratio > 1 ? fit : fit * ratio
+    const height = ratio > 1 ? fit / ratio : fit
+    ctx.drawImage(image, (size - width) / 2, (size - height) / 2, width, height)
+    const { data } = ctx.getImageData(0, 0, size, size)
+    const pixels: number[] = []
+    for (let i = 0; i < size * size; i++) {
+      const offset = i * 4
+      const r = data[offset]
+      const g = data[offset + 1]
+      const b = data[offset + 2]
+      const a = data[offset + 3]
+      // The Flutter file has a pale square behind its symbol; keep only the symbol.
+      const background = paleBackground && r > 205 && g > 205 && b > 205 && Math.max(r, g, b) - Math.min(r, g, b) < 20
+      if (a > 96 && !background) pixels.push(i)
+    }
+    if (!pixels.length) throw new Error(`no mark found in ${url}`)
+    return { pixels, data }
+  }))
+
+  const colors = new Float32Array(count * 4)
+  const linear = (value: number) => {
+    const channel = value / 255
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  }
+  const shape = build(count, (i, rnd, out) => {
+    const logo = i % masks.length
+    const { pixels, data } = masks[logo]
+    const pixel = pixels[Math.floor(rnd() * pixels.length)]
+    const [homeX, homeY] = homes[logo]
+    const x = ((pixel % size + rnd()) / size - 0.5) * 0.46 + homeX
+    const y = (0.5 - (Math.floor(pixel / size) + rnd()) / size) * 0.46 + homeY
+    out.set(x, y, (rnd() - 0.5) * 0.1, 0.45 + rnd() * 0.25)
+    const source = pixel * 4
+    const target = i * 4
+    colors[target] = linear(data[source])
+    colors[target + 1] = linear(data[source + 1])
+    colors[target + 2] = linear(data[source + 2])
+    colors[target + 3] = 1
   }, 31)
+  shape.colors = colors
+  return shape
 }
 
 function waveShape(count: number) {
@@ -331,6 +392,7 @@ function waveShape(count: number) {
 async function nameShape(count: number): Promise<Shape> {
   const font = '700 300px "Clash Display"'
   await document.fonts.load(font, 'PEPIJN LATOUR').catch(() => [])
+  // Draw the name as pixels, then sample those pixels just like project artwork.
   const canvas = document.createElement('canvas')
   canvas.width = 1400
   canvas.height = 700
@@ -354,36 +416,12 @@ async function nameShape(count: number): Promise<Shape> {
   }, 53)
 }
 
-// ---------------------------------------------------------------- optional 3D models
-
-/** A model at these paths replaces that project's flat mark. */
-const MODELS: Partial<Record<ShapeName, string>> = {
-  superlocal: 'models/superlocal.glb',
-  sitesculpt: 'models/sitesculpt.glb',
-  wiewanneer: 'models/wiewanneer.glb',
-  archerstats: 'models/archerstats.glb',
-}
-
-/** Only models that were in public/ at build time are fetched, so a visit makes no requests that 404. */
-async function modelShape(name: ShapeName, count: number) {
-  const path = MODELS[name]
-  if (!path || !PUBLIC_FILES.includes(path)) return null
-  try {
-    // The glTF code is only downloaded when a model exists.
-    const { loadModelShape } = await import('./models')
-    return await loadModelShape(`/${path}`, count)
-  } catch (error) {
-    console.warn(`[story] could not load /${path}`, error)
-    return null
-  }
-}
-
 // ---------------------------------------------------------------- loading
 
 const SHAPES: Record<ShapeName, (count: number) => Shape | Promise<Shape>> = {
   head: headShape,
   noise: noiseShape,
-  lattice: latticeShape,
+  expertise: expertiseShape,
   superlocal: superlocalShape,
   sitesculpt: (n) => artworkShape(n, '/images/SiteSculpt.png', 2, (r, g, _b, a) => a > 128 && r < 120 && g > 40),
   // The app icon: bright and dim day tiles around the chosen column. Its dark backdrop is dropped.
@@ -423,7 +461,7 @@ export async function createShapes(
     start = start.then(yieldFrame)
     try {
       await start
-      shape = (await modelShape(name, count)) ?? await SHAPES[name](count)
+      shape = await SHAPES[name](count)
     } catch (error) {
       console.warn(`[story] shape "${name}" failed, showing noise instead`, error)
       shape = noiseShape(count)

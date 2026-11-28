@@ -19,14 +19,14 @@ The interface stays `#121212` with the `#FF7A00` accent, Clash Display, Satoshi 
 
 ```mermaid
 flowchart LR
-  A[00 Signal<br/>your head] --> B[01 Noise] --> C[02 Clarity<br/>lattice] --> D[03a Superlocal<br/>logo] --> E[03b SiteSculpt<br/>S mark] --> F2[03c BeatBox<br/>logo] --> G[04 People<br/>your head] --> G1[04.1 WieWanneer] --> G2[04.2 ArcherStats] --> G3[04.3 XKill] --> I[Contact<br/>wave] --> J[LATOUR]
+  A[00 Signal<br/>your head] --> B[01 Noise] --> C[02 Clarity<br/>expertise logos] --> D[03a Superlocal<br/>logo] --> E[03b SiteSculpt<br/>S mark] --> F2[03c BeatBox<br/>logo] --> G[04 People<br/>your head] --> G1[04.1 WieWanneer] --> G2[04.2 ArcherStats] --> G3[04.3 XKill] --> I[Contact<br/>wave] --> J[LATOUR]
 ```
 
 | Chapter | Particles | Colour | Motion | Text |
 | --- | --- | --- | --- | --- |
 | Signal | `PepijnPCD.pcd` | Orange | Assembles on load, scan line | Name, role, tagline, readout |
 | Noise | Storm | Orange | Turbulence | Less friction. More signal. |
-| Clarity | 3D lattice | Orange | Slow turn | Input / process / output |
+| Clarity | Twelve scattered expertise logos | SVG colours | Gentle turn | Input / process / output |
 | Superlocal | Cut-out letter logo | Blue | Ripple | Project card with live link |
 | SiteSculpt | "S" mark from `SiteSculpt.png` | Green | Slow turn | Project card |
 | BeatBox Soundlab | Logo from Figma (`BeatBox.svg`, the simple black variant: soundwave, line and wordmark) | Red and cream | Slow turn | Project card, no link |
@@ -44,7 +44,7 @@ The cloud never rotates with the cursor. It sways on its own, and particles near
 All shapes are built in the browser from files already in the repo, so no 3D model files are needed.
 
 - **Superlocal:** `src/gl/shapes.ts` redraws the logo. Save the original as `public/images/superlocal-logo.png` (blue tiles, white or transparent background) and it is used instead.
-- **Meshy:** skipped. Nothing was generated. A model saved as `public/models/superlocal.glb` or `sitesculpt.glb` would still replace that project's flat mark.
+- **Expertise:** The first four SVGs came from the supplied files. Next.js, React, Tailwind CSS, Figma, Blender, Claude and Bun came from [Simple Icons](https://github.com/simple-icons/simple-icons); Adobe Creative Cloud came from [Simple Icons 13.14.0](https://cdn.jsdelivr.net/npm/simple-icons@13.14.0/icons/adobecreativecloud.svg). Single-colour SVGs were tinted for the dark background.
 
 ## Project cards
 

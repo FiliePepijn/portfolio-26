@@ -13,6 +13,7 @@ export interface Project {
   links: { label: string; url: string }[]
 }
 
+// These cards appear before the People section. Their ids match chapters in chapters.ts.
 export const PROJECTS: Project[] = [
   {
     id: 'superlocal',
@@ -30,16 +31,17 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    id: 'sitesculpt',
-    title: 'SiteSculpt',
-    category: 'Web / UX',
-    desc: 'Handcrafted websites built from scratch, without templates. Each one is designed around the business and its audience, and written as custom code so it stays fast.',
+    id: 'xkill',
+    title: 'XKill',
+    category: 'Mobile game',
+    credit: 'Built as a duo',
+    desc: 'A real-life game of tag on your phone. Every player gets a role: hunter or target. As the target you have to get away; once a hunter is close enough, Bluetooth proximity lets them shoot or kill you.',
     facts: [
-      ['Approach', 'Custom design, no templates'],
-      ['Stack', 'Next.js, React, Tailwind CSS, GSAP'],
-      ['Client work', 'Life of Light, spiritual coaching'],
+      ['Context', 'Fontys case, made as a duo'],
+      ['Our work', 'UX, design and development'],
+      ['Stack', 'Flutter, Bluetooth proximity'],
     ],
-    links: [{ label: 'See Life of Light', url: 'https://lifeoflight.nl' }],
+    links: [],
   },
   {
     id: 'beatbox',
@@ -74,6 +76,18 @@ export const OWN_APPS: Project[] = [
     ],
   },
   {
+    id: 'sitesculpt',
+    title: 'SiteSculpt',
+    category: 'Web / UX',
+    desc: 'Handcrafted websites built from scratch, without templates. Each one is designed around the business and its audience, and written as custom code so it stays fast.',
+    facts: [
+      ['Approach', 'Custom design, no templates'],
+      ['Stack', 'Next.js, React, Tailwind CSS, GSAP'],
+      ['Client work', 'Life of Light, spiritual coaching'],
+    ],
+    links: [{ label: 'See Life of Light', url: 'https://lifeoflight.nl' }],
+  },
+  {
     id: 'archerstats',
     title: 'ArcherStats',
     category: 'Sport / Data',
@@ -84,28 +98,18 @@ export const OWN_APPS: Project[] = [
       ['Also', 'Competitions and range devices'],
     ],
     links: [{ label: 'Open ArcherStats', url: 'https://archery.platour.net' }],
-  },
-  {
-    id: 'xkill',
-    title: 'XKill',
-    category: 'Mobile game',
-    credit: 'Built as a duo',
-    desc: 'A real-life game of tag on your phone. Every player gets a role: hunter or target. As the target you have to get away; once a hunter is close enough, Bluetooth proximity lets them shoot or kill you.',
-    facts: [
-      ['Context', 'Fontys case, made as a duo'],
-      ['Our work', 'UX, design and development'],
-      ['Stack', 'Flutter, Bluetooth proximity'],
-    ],
-    links: [],
-  },
+  }
+
 ]
 
 /** Shown in the Clarity chapter. */
 export const SKILLS: [group: string, items: string[]][] = [
-  ['Frontend', ['Next.js', 'React', 'Vue', 'TypeScript', 'Tailwind CSS']],
+  ['Frontend', ['Next.js', 'React', 'Vue', 'TypeScript', 'Tailwind CSS', 'Vite', 'Bun']],
+  ['Design', ['Figma', 'Adobe Creative Cloud', 'Blender']],
   ['3D / Motion', ['Three.js', 'WebGPU', 'TSL', 'GSAP']],
   ['Backend', ['PostgreSQL', 'Prisma', 'Cloudflare Workers', 'D1']],
   ['Mobile', ['Expo', 'Flutter']],
+  ['AI', ['Claude']],
 ]
 
 export const SOCIALS = [

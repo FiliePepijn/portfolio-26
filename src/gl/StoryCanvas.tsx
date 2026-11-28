@@ -11,6 +11,7 @@ export default function StoryCanvas() {
 
   useEffect(() => {
     const controller = new AbortController()
+    // Hand the canvas to the engine, and forward loading progress to the opening screen.
     engine
       .then(({ startStory }) => startStory(host.current!, controller.signal, (value, label) => {
         loader.progress(value, label)
@@ -21,6 +22,7 @@ export default function StoryCanvas() {
         setFailed(true)
         loader.done()
       })
+    // Stop the render loop and listeners if React removes this canvas.
     return () => controller.abort()
   }, [])
 

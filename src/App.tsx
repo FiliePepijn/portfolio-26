@@ -9,6 +9,7 @@ import { useChapterScroll } from './story/useChapterScroll'
 const OGPreview = lazy(() => import('./components/OGPreview'))
 
 function Chapter({ id, side = 'left', project = false, children }: { id: string; side?: 'left' | 'right' | 'center'; project?: boolean; children: ReactNode }) {
+  // The id connects this section to its entry in CHAPTERS and to the scroll triggers.
   return (
     <section id={id} className={`chapter chapter--${side} chapter--tall ${project ? 'chapter--project' : ''}`}>
       <div className="chapter__stage">
@@ -56,6 +57,7 @@ function ProjectCard({ project, label }: { project: Project; label: string }) {
 }
 
 function App() {
+  // The capture script opens ?preview=og to render the social image at a fixed size.
   const isOGPreview = new URLSearchParams(window.location.search).get('preview') === 'og'
   const active = useChapterScroll(!isOGPreview)
 
@@ -63,6 +65,7 @@ function App() {
 
   return (
     <div className="story font-satoshi text-white selection:bg-[#FF7A00] selection:text-[#121212]">
+      {/* The WebGPU/WebGL canvas sits behind all of the readable page content. */}
       <StoryCanvas />
 
       <header className="fixed inset-x-0 top-0 z-40 flex items-center justify-between px-4 py-4 font-brutalist-mono text-[10px] uppercase tracking-[0.2em] md:px-8">
@@ -125,6 +128,7 @@ function App() {
           </dl>
         </Chapter>
 
+        {/* Cards reuse the same section ids as their particle logo chapters. */}
         {PROJECTS.map((project, i) => (
           <Chapter key={project.id} id={project.id} side={i % 2 === 0 ? 'right' : 'left'} project>
             <ProjectCard project={project} label={`03.${i + 1} // Selected work · ${project.category}`} />

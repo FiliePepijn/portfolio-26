@@ -7,6 +7,7 @@ import { chromaticAberration } from 'three/examples/jsm/tsl/display/ChromaticAbe
 export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera) {
   const aberration = uniform(0.15)
   const sceneTexture = pass(scene, camera).getTextureNode('output')
+  // Bloom adds a soft halo around the bright dots after the scene is drawn.
   const glow = sceneTexture.add(bloom(sceneTexture, 0.42, 0.4, 0.3))
   // The effect node samples like any vec4; its published type just doesn't say so.
   const split = chromaticAberration(glow, aberration, vec2(0.5), float(1.08)) as unknown as Node<'vec4'>
@@ -18,6 +19,7 @@ export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, c
   const seed = screenCoordinate.x.toUint().add(screenCoordinate.y.toUint().mul(4096)).add(frame.mul(7919))
   const grain = hash(seed).sub(0.5).mul(0.012)
 
+  // Put the colour split, darker corners and film grain into the final image.
   const pipeline = new THREE.RenderPipeline(renderer)
   pipeline.outputNode = vec4(split.rgb.mul(vignette).add(grain), 1)
 

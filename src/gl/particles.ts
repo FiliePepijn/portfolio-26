@@ -14,9 +14,14 @@ export function createParticles(count: number, shapes: Shape[]) {
   }
 
   const positions = instancedArray(start, 'vec4')
+  // Velocity lets dots coast and settle instead of jumping straight to their homes.
   const velocities = instancedArray(count, 'vec4')
-  // Targets are uploaded once. Rewriting a storage buffer does not reach the WebGL2 fallback.
+  const particleColors = instancedArray(count, 'vec4')
+  // Store every shape's home positions on the GPU. The dots keep their order between shapes.
   const buffers = new Map(shapes.map((data) => [data, instancedArray(new Float32Array(data), 'vec4')]))
+  const colorBuffers = new Map(shapes.filter((shape) => shape.colors).map((shape) => [
+    shape, instancedArray(new Float32Array(shape.colors!), 'vec4'),
+  ]))
 
   const u = {
     blend: uniform(0),
@@ -41,7 +46,11 @@ export function createParticles(count: number, shapes: Shape[]) {
 
     // Each particle leaves at its own moment, so shapes pour into each other.
     const m = smoothstep(seed.mul(0.4), seed.mul(0.4).add(0.6), u.blend)
+    // Here each dot gets a new home: blend its spot in the old shape with its spot in the next.
     const shape = mix(buffers.get(from)!.element(instanceIndex), buffers.get(to)!.element(instanceIndex), m)
+    // Project chapters use one tint; expertise dots use the colour of their SVG pixel.
+    const fromTint = from.colors ? colorBuffers.get(from)!.element(instanceIndex).xyz : u.tintA
+    const toTint = to.colors ? colorBuffers.get(to)!.element(instanceIndex).xyz : u.tintB
     // A wave that ripples across the Superlocal tiles.
     const crawl = sin(shape.x.mul(4.2).add(u.time.mul(5))).mul(0.07).mul(u.crawl)
     // The tiny per-pass constant keeps every program's source unique: the WebGL2 backend
@@ -57,16 +66,19 @@ export function createParticles(count: number, shapes: Shape[]) {
     const near = max(float(1).sub(length(away).div(0.5)), 0)
     const push = vec3(away.normalize(), seed.sub(0.5).mul(2)).mul(near.mul(near).mul(18).mul(u.pointerForce))
 
+    // Pull the dot toward that home each frame, like a tiny spring.
     const spring = target.xyz.sub(position.xyz).mul(seed.mul(14).add(16))
     const acceleration = spring.add(noise.mul(strength)).add(push)
 
     const damping = float(0.86).pow(u.delta.mul(60))
+    // Remember this frame's movement so the next frame starts where the dot left off.
     const nextVelocity = velocity.xyz.add(acceleration.mul(u.delta)).mul(damping)
     const simulated = position.xyz.add(nextVelocity.mul(u.delta))
 
     velocity.xyz.assign(mix(nextVelocity, vec3(0), u.snap))
     position.xyz.assign(mix(simulated, target.xyz, u.snap))
     position.w.assign(mix(position.w, target.w, mix(float(0.08), float(1), u.snap)))
+    particleColors.element(instanceIndex).xyz.assign(mix(fromTint, toTint, step(0.5, m)))
   })().compute(count)
 
   const material = new THREE.SpriteNodeMaterial({
@@ -77,6 +89,7 @@ export function createParticles(count: number, shapes: Shape[]) {
   })
 
   const point = positions.toAttribute()
+  // Each GPU position becomes a tiny visible disc; speed can brighten it while it moves.
   const speed = velocities.toAttribute().xyz.length()
   const seed = hash(instanceIndex.add(917))
 
@@ -85,9 +98,8 @@ export function createParticles(count: number, shapes: Shape[]) {
 
   const heat = smoothstep(0.25, 2.6, speed)
   const band = smoothstep(0, 0.1, point.y.sub(u.time.mul(0.28).fract().mul(2.8).sub(1.4)).abs()).oneMinus().mul(u.scan)
-  // Each particle changes colour as it leaves, so two projects never muddy into a third hue.
-  const leaving = hash(instanceIndex).mul(0.4)
-  const tint = mix(u.tintA, u.tintB, step(0.5, smoothstep(leaving, leaving.add(0.6), u.blend)))
+  // Colour switches with each particle's departure, so colours do not muddy together.
+  const tint = particleColors.toAttribute().xyz
   const base = mix(tint.mul(0.28), tint, smoothstep(0.1, 0.65, point.w))
   const hot = mix(base, mix(tint, color('#ffffff'), 0.7), max(smoothstep(0.82, 1, point.w), heat.mul(0.7)))
   material.colorNode = mix(hot, color('#fff1e0'), band.mul(0.35))

@@ -5,10 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
-/** Optional artwork and models the 3D story looks for, so it never requests files that are not there. */
-const publicFiles = ['models', 'images'].flatMap((dir) =>
-  existsSync(`public/${dir}`) ? readdirSync(`public/${dir}`).map((file) => `${dir}/${file}`) : [],
-)
+/** List optional artwork at build time so the story never requests a missing image. */
+const publicFiles = existsSync('public/images')
+  ? readdirSync('public/images').map((file) => `images/${file}`)
+  : []
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), cloudflare()],

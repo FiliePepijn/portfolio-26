@@ -30,6 +30,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
   if (signal.aborted) return renderer.dispose()
 
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
+  // Use fewer dots on smaller screens or when the browser uses the WebGL2 fallback.
   const count = mobile.matches ? 45_000 : webgpu ? 140_000 : 70_000
   console.info(`[story] backend: ${webgpu ? 'WebGPU' : 'WebGL2'}, particles: ${count}`)
   host.dataset.backend = webgpu ? 'webgpu' : 'webgl2'
@@ -46,6 +47,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
   }, nextFrame)
   if (signal.aborted) return renderer.dispose()
 
+  // Give the particles one set of home positions for each section, in scroll order.
   const particles = createParticles(count, CHAPTERS.map((c) => shapes.get(c.shape)!))
   const group = new THREE.Group()
   group.add(particles.object)
@@ -117,6 +119,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
   document.documentElement.addEventListener('pointerleave', onLeave)
 
   const scroll = createScrollStory(reduced.matches)
+  // The frame loop reads this scroll position and sends it to the particle shader.
   const timer = new THREE.Timer()
   timer.connect(document)
   const ray = new THREE.Raycaster()
@@ -155,6 +158,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     chapter = position
     speed = damp(speed, Math.abs(chapter - previous) / Math.max(delta, 1e-4), 5, delta)
 
+    // The current scroll position picks the two sections whose shapes can blend.
     const i = Math.min(Math.floor(chapter), CHAPTERS.length - 2)
     const from = CHAPTERS[i]
     const to = CHAPTERS[i + 1]
@@ -162,6 +166,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     const t = smoothstep(chapter - i, 0.18, 0.82)
 
     const u = particles.uniforms
+    // Tell the GPU how far each dot's home should move toward the next shape.
     u.blend.value = t
     u.delta.value = delta
     u.time.value = time
@@ -180,6 +185,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
     const halfWidth = halfHeight * camera.aspect
     // Narrow screens shrink wide shapes so they never leave the frame.
     const widthFit = (c: Chapter) => (c.shape === 'name' ? Math.min(1, (halfWidth * 1.85) / 3.4) : Math.min(1, camera.aspect / (mobile.matches ? 0.5 : 1.45)))
+    // Move and turn the whole cloud as the section changes; dot homes move inside it.
     group.scale.setScalar(lerp(a.scale * widthFit(from), b.scale * widthFit(to), t))
     group.position.set(lerp(a.x, b.x, t) * halfWidth, lerp(a.y, b.y, t) * halfHeight, 0)
 
@@ -193,6 +199,7 @@ export async function startStory(host: HTMLElement, signal: AbortSignal, onProgr
 
     post.aberration.value = still ? 0 : 0.12 + clamp(speed * 0.55, 0, 1.4)
 
+    // Run the movement for this pair of shapes, then draw the dots.
     renderer.compute(particles.updates[i])
     post.pipeline.render()
     if (!live) {
